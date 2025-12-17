@@ -21,12 +21,10 @@ const TODOS_EQUIPAMENTOS = [
 
 const CSV_URL = 'dados.csv';
 
-// Lê o CSV simples (espera cabeçalho: equipamento;local)
+// Lê o CSV simples (espera cabeçalho: equipamento,local usando VÍRGULA)
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
-  const cabecalho = linhas[0].split(';').map(h => h.trim().toLowerCase());
-  // Se o CSV usar vírgula:
-  // const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
+  const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
 
   const dados = [];
 
@@ -34,9 +32,7 @@ function parseCSV(text) {
     const linha = linhas[i].trim();
     if (!linha) continue;
 
-    const colunas = linha.split(';').map(c => c.trim());
-    // Se o CSV usar vírgula:
-    // const colunas = linha.split(',').map(c => c.trim());
+    const colunas = linha.split(',').map(c => c.trim());
 
     const obj = {};
     cabecalho.forEach((col, idx) => {
@@ -72,7 +68,7 @@ function interpretarLocal(localBruto) {
     texto.includes('oficina') ||
     texto.includes('manutencao') ||
     texto.includes('manutencao leve') ||
-    texto.includes('manut ') // genérico
+    texto.includes('manut ')
   ) {
     return { status: 'manutencao_leve', cliente: '' };
   }
