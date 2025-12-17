@@ -1,7 +1,8 @@
-"equipamento;local"
-"GE-02-50;Cliente A - Obra Centro"
-"GE-03-40;Oficina Central"
-"GE-05-55;Manuten‡Æo pesada"
-"GE-10-25;Cliente B - Usina Norte"
-"MTS-01-300;Manuten‡Æo leve"
-"TL-01-4000;Cliente C - Porto"
+equipamento;local
+GE-02-50;Cliente A - Obra Centro
+GE-03-40;Oficina Central
+GE-05-55;Manutenção pesada
+GE-10-25;Cliente B - Usina Norte
+MTS-01-300;Manutenção leve
+TL-01-4000;Cliente C - Porto
+GE-11-75;Pátio
