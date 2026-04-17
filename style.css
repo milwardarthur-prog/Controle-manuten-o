@@ -6,48 +6,33 @@ body {
   padding: 20px;
 }
 
-/* TOPO */
-.topo {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-/* TÍTULO CENTRAL */
 h1 {
   text-align: center;
-  margin: 0;
-  font-size: 1.8rem;
+  margin-bottom: 20px;
+  font-size: 2rem;
 }
 
-/* TABELA NO CANTO DIREITO */
+/* RESUMO */
 .resumo {
-  position: absolute;
-  top: 0;
-  right: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 20px;
+  margin-bottom: 20px;
+  font-size: 1rem;
 }
 
-.resumo table {
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.resumo th,
-.resumo td {
-  border: 1px solid #555;
-  padding: 4px 8px;
-  text-align: center;
-}
-
-.resumo th {
+.resumo div {
   background: #222;
+  padding: 8px 12px;
+  border-radius: 6px;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
 }
 
-.resumo td {
-  background: #333;
+.resumo span {
   font-weight: bold;
+  font-size: 1.2rem;
 }
 
-/* CORES DOS NÚMEROS */
 #cont-disponivel {
   color: #00ff66;
 }
@@ -92,23 +77,28 @@ h1 {
   width: 14px;
   height: 14px;
   border-radius: 50%;
+  box-shadow: 0 0 10px rgba(0,0,0,0.8);
 }
 
 /* STATUS */
 .status-disponivel .led {
   background: #00ff66;
+  box-shadow: 0 0 12px #00ff66;
 }
 
 .status-locado .led {
   background: #00aaff;
+  box-shadow: 0 0 12px #00aaff;
 }
 
 .status-manutencao_leve .led {
   background: #ffdd00;
+  box-shadow: 0 0 12px #ffdd00;
 }
 
 .status-manutencao_pesada .led {
   background: #ff3333;
+  box-shadow: 0 0 12px #ff3333;
 }
 
 .status-texto {
@@ -118,28 +108,5 @@ h1 {
 .cliente {
   font-size: 0.9rem;
   color: #ccc;
-}
-
-/* IMPRESSÃO */
-@media print {
-  body {
-    background: #fff;
-    color: #000;
-  }
-
-  .resumo {
-    position: absolute;
-    right: 0;
-    top: 0;
-  }
-
-  .card {
-    background: none;
-    border: 1px solid #000;
-    box-shadow: none;
-  }
-
-  .led {
-    display: none;
-  }
+  margin-top: 4px;
 }

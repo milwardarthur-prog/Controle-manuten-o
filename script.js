@@ -20,13 +20,16 @@ const TODOS_EQUIPAMENTOS = [
 
 const CSV_URL = 'dados.csv';
 
+// CONTADORES
 let contDisponivel = 0;
 let contManutencao = 0;
 let contLocado = 0;
 
+// CSV
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
   const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
+
   const dados = [];
 
   for (let i = 1; i < linhas.length; i++) {
@@ -43,6 +46,7 @@ function parseCSV(text) {
   return dados;
 }
 
+// INTERPRETAÇÃO
 function interpretarLocal(localBruto) {
   if (!localBruto) {
     return { status: 'locado', cliente: '' };
@@ -63,6 +67,7 @@ function interpretarLocal(localBruto) {
   return { status: 'locado', cliente: localBruto };
 }
 
+// MAPA STATUS
 function mapStatus(status) {
   switch (status) {
     case 'locado':
@@ -76,10 +81,12 @@ function mapStatus(status) {
   }
 }
 
+// CARD
 function criarCard(equipamento, status, cliente) {
   const painel = document.getElementById('painel');
   const { classe, texto } = mapStatus(status);
 
+  // CONTADORES
   if (status === 'disponivel') contDisponivel++;
   else if (status === 'locado') contLocado++;
   else contManutencao++;
@@ -99,6 +106,7 @@ function criarCard(equipamento, status, cliente) {
   painel.appendChild(card);
 }
 
+// LOAD
 fetch(CSV_URL)
   .then(res => res.text())
   .then(text => {
@@ -124,6 +132,7 @@ fetch(CSV_URL)
       }
     });
 
+    // ATUALIZA CONTADORES
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
