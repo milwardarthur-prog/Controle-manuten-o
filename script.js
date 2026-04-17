@@ -1,4 +1,3 @@
-// 1. Lista fixa de todos os equipamentos que você quer controlar
 const TODOS_EQUIPAMENTOS = [
   "GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-09-170","GE-10-25",
   "GE-11-75","GE-12-75","GE-13-500","GE-14-140","GE-15-170","GE-16-40","GE-17-81",
@@ -21,7 +20,12 @@ const TODOS_EQUIPAMENTOS = [
 
 const CSV_URL = 'dados.csv';
 
-// Lê o CSV simples (espera cabeçalho: equipamento,local usando VÍRGULA)
+// CONTADORES
+let contDisponivel = 0;
+let contManutencao = 0;
+let contLocado = 0;
+
+// CSV
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
   const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
@@ -29,12 +33,9 @@ function parseCSV(text) {
   const dados = [];
 
   for (let i = 1; i < linhas.length; i++) {
-    const linha = linhas[i].trim();
-    if (!linha) continue;
-
-    const colunas = linha.split(',').map(c => c.trim());
-
+    const colunas = linhas[i].split(',').map(c => c.trim());
     const obj = {};
+
     cabecalho.forEach((col, idx) => {
       obj[col] = colunas[idx] || '';
     });
@@ -45,142 +46,96 @@ function parseCSV(text) {
   return dados;
 }
 
-// Converte o campo "local" em { status, cliente }
+// INTERPRETAÇÃO
 function interpretarLocal(localBruto) {
   if (!localBruto) {
-    // Se veio na planilha mas sem local, considera locado sem cliente definido
     return { status: 'locado', cliente: '' };
   }
 
   const texto = localBruto.toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, ''); // remove acentos
+    .replace(/[\u0300-\u036f]/g, '');
 
-  // Regras de exemplo — ajuste depois para o seu padrão real
-
-  // Manutenção pesada
   if (texto.includes('pesada')) {
     return { status: 'manutencao_pesada', cliente: '' };
   }
 
-  // Manutenção leve / oficina
-  if (
-    texto.includes('oficina') ||
-    texto.includes('manutencao') ||
-    texto.includes('manutencao leve') ||
-    texto.includes('manut ')
-  ) {
+  if (texto.includes('manutencao')) {
     return { status: 'manutencao_leve', cliente: '' };
   }
 
-  // Se não se encaixa em manutenção, considera LOCADO
-  // e usa o texto do local como nome do cliente/obra
   return { status: 'locado', cliente: localBruto };
 }
 
-// Mapeia status -> classe CSS + texto
-function mapStatus(statusBruto) {
-  if (!statusBruto) {
-    return { classe: 'status-disponivel', texto: 'Disponível' };
-  }
-
-  const s = statusBruto.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  switch (s) {
+// MAPA STATUS
+function mapStatus(status) {
+  switch (status) {
     case 'locado':
       return { classe: 'status-locado', texto: 'Locado' };
-    case 'disponivel':
-      return { classe: 'status-disponivel', texto: 'Disponível' };
     case 'manutencao_leve':
       return { classe: 'status-manutencao_leve', texto: 'Manutenção leve' };
     case 'manutencao_pesada':
       return { classe: 'status-manutencao_pesada', texto: 'Manutenção pesada' };
     default:
-      return { classe: 'status-disponivel', texto: statusBruto || 'Disponível' };
+      return { classe: 'status-disponivel', texto: 'Disponível' };
   }
 }
 
+// CARD
 function criarCard(equipamento, status, cliente) {
   const painel = document.getElementById('painel');
   const { classe, texto } = mapStatus(status);
 
+  // CONTADORES
+  if (status === 'disponivel') contDisponivel++;
+  else if (status === 'locado') contLocado++;
+  else contManutencao++;
+
   const card = document.createElement('div');
   card.className = `card ${classe}`;
 
-  const titulo = document.createElement('div');
-  titulo.className = 'card-titulo';
-  titulo.textContent = equipamento;
-
-  const statusLinha = document.createElement('div');
-  statusLinha.className = `status-linha ${classe}`;
-
-  const led = document.createElement('div');
-  led.className = 'led';
-
-  const statusTexto = document.createElement('span');
-  statusTexto.className = 'status-texto';
-  statusTexto.textContent = texto;
-
-  statusLinha.appendChild(led);
-  statusLinha.appendChild(statusTexto);
-
-  card.appendChild(titulo);
-  card.appendChild(statusLinha);
-
-  if (cliente && cliente.trim() !== '') {
-    const clienteDiv = document.createElement('div');
-    clienteDiv.className = 'cliente';
-    clienteDiv.textContent = `Cliente: ${cliente}`;
-    card.appendChild(clienteDiv);
-  }
+  card.innerHTML = `
+    <div class="card-titulo">${equipamento}</div>
+    <div class="status-linha ${classe}">
+      <div class="led"></div>
+      <span class="status-texto">${texto}</span>
+    </div>
+    ${cliente ? `<div class="cliente">Cliente: ${cliente}</div>` : ''}
+  `;
 
   painel.appendChild(card);
 }
 
-// Carrega o CSV, filtra pelos equipamentos de interesse e monta o painel
+// LOAD
 fetch(CSV_URL)
-  .then(res => {
-    if (!res.ok) {
-      throw new Error('Não foi possível carregar o arquivo dados.csv');
-    }
-    return res.text();
-  })
+  .then(res => res.text())
   .then(text => {
     const linhas = parseCSV(text);
-
-    // Mapa com apenas os equipamentos que você quer controlar
     const mapa = {};
 
     linhas.forEach(linha => {
-      // alguns relatórios usam "equipamento" ou "nome", tentamos os dois
-      const eq = (linha['equipamento'] || linha['nome'] || '').trim();
+      const eq = (linha['equipamento'] || '').trim();
       const local = (linha['local'] || '').trim();
 
-      if (!eq) return;
+      if (!eq || !TODOS_EQUIPAMENTOS.includes(eq)) return;
 
-      // Só considera se estiver na lista fixa
-      if (!TODOS_EQUIPAMENTOS.includes(eq)) return;
-
-      const { status, cliente } = interpretarLocal(local);
-      mapa[eq] = { status, cliente };
+      mapa[eq] = interpretarLocal(local);
     });
 
-    // Para cada equipamento da lista fixa, cria o card
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq];
 
       if (!info) {
-        // Não veio na planilha => disponível
         criarCard(eq, 'disponivel', '');
       } else {
         criarCard(eq, info.status, info.cliente);
       }
     });
-  })
-  .catch(err => {
-    console.error(err);
-    const painel = document.getElementById('painel');
-    painel.innerHTML = '<p>Erro ao carregar dados. Verifique o arquivo dados.csv.</p>';
+
+    // ATUALIZA CONTADORES
+    document.getElementById('cont-disponivel').textContent = contDisponivel;
+    document.getElementById('cont-manutencao').textContent = contManutencao;
+    document.getElementById('cont-locado').textContent = contLocado;
+    document.getElementById('cont-total').textContent =
+      contDisponivel + contManutencao + contLocado;
   });
