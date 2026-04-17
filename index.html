@@ -9,14 +9,24 @@
 <body>
 
   <div class="topo">
-    <div class="resumo">
-      <div>🟢 <span id="cont-disponivel">0</span></div>
-      <div>🟡 <span id="cont-manutencao">0</span></div>
-      <div>🔵 <span id="cont-locado">0</span></div>
-      <div>⚪ <span id="cont-total">0</span></div>
-    </div>
-
     <h1>Painel de Equipamentos</h1>
+
+    <div class="resumo">
+      <table>
+        <tr>
+          <th>Disponíveis</th>
+          <th>Manutenção</th>
+          <th>Locados</th>
+          <th>Total</th>
+        </tr>
+        <tr>
+          <td id="cont-disponivel">0</td>
+          <td id="cont-manutencao">0</td>
+          <td id="cont-locado">0</td>
+          <td id="cont-total">0</td>
+        </tr>
+      </table>
+    </div>
   </div>
 
   <div id="painel" class="painel"></div>
