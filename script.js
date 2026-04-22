@@ -18,20 +18,35 @@ const TODOS_EQUIPAMENTOS = [
   "GE-114-360","MTS-01-300","MTS-02-300","TL-01-4000"
 ];
 
-const CATEGORIAS = [
-  { nome: "Geradores 10kVA a 30kVA", min: 10, max: 30 },
-  { nome: "Geradores 40kVA a 65kVA", min: 40, max: 65 },
-  { nome: "Geradores 70kVA a 90kVA", min: 70, max: 90 },
-  { nome: "Geradores 100kVA a 130kVA", min: 100, max: 130 },
-  { nome: "Geradores 140kVA a 160kVA", min: 140, max: 160 },
-  { nome: "Geradores 170kVA a 190kVA", min: 170, max: 190 },
-  { nome: "Geradores 200kVA a 290kVA", min: 200, max: 290 },
-  { nome: "Geradores 300kVA a 600kVA", min: 300, max: 600 },
-  { nome: "Outros Equipamentos", especial: true }
+const FAIXAS_KVA = [
+  { id: '10-30',   min: 10,  max: 30  },
+  { id: '40-65',   min: 40,  max: 65  },
+  { id: '70-90',   min: 70,  max: 90  },
+  { id: '100-130', min: 100, max: 130 },
+  { id: '140-160', min: 140, max: 160 },
+  { id: '170-190', min: 170, max: 190 },
+  { id: '200-290', min: 200, max: 290 },
+  { id: '300-600', min: 300, max: 600 },
 ];
 
 const CSV_URL = 'dados.csv';
 let contDisponivel = 0, contManutencao = 0, contLocado = 0;
+
+// Filtros ativos
+let filtroStatusAtivo = 'todos';
+let filtroKvaAtivo = 'todos';
+
+function getKva(eq) {
+  const partes = eq.split('-');
+  return parseInt(partes[partes.length - 1]);
+}
+
+function getFaixaId(eq) {
+  if (eq.startsWith('MTS') || eq.startsWith('TL')) return 'outros';
+  const kva = getKva(eq);
+  const faixa = FAIXAS_KVA.find(f => kva >= f.min && kva <= f.max);
+  return faixa ? faixa.id : 'outros';
+}
 
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
@@ -44,14 +59,6 @@ function parseCSV(text) {
   });
 }
 
-function identificarCategoria(eq) {
-  if (eq.startsWith("MTS") || eq.startsWith("TL")) return "Outros Equipamentos";
-  const partes = eq.split('-');
-  const kva = parseInt(partes[partes.length - 1]);
-  const catFound = CATEGORIAS.find(c => !c.especial && kva >= c.min && kva <= c.max);
-  return catFound ? catFound.nome : "Outros Equipamentos";
-}
-
 function interpretarLocal(localBruto) {
   if (!localBruto) return { status: 'locado', cliente: '' };
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -60,82 +67,76 @@ function interpretarLocal(localBruto) {
   return { status: 'locado', cliente: localBruto };
 }
 
-function criarCard(eq, info) {
-  const { classe, texto } = mapStatus(info.status);
-  const partes = eq.split('-');
-  const kvaText = partes.length >= 3 ? partes[partes.length - 1] + ' kVA' : '';
-
-  if (info.status === 'disponivel') contDisponivel++;
-  else if (info.status === 'locado') contLocado++;
-  else contManutencao++;
-
-  const div = document.createElement('div');
-  div.className = `card status-${info.status}`;
-  div.innerHTML = `
-    <div class="card-titulo">${eq}</div>
-    <div class="card-kva">${kvaText}</div>
-    <div class="status-linha ${classe}">
-      <div class="led"></div>
-      <span class="status-texto">${texto}</span>
-    </div>
-    ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
-  `;
-  return div;
-}
-
 function mapStatus(s) {
-  if (s === 'locado') return { classe: 'status-locado', texto: 'Locado' };
-  if (s === 'manutencao_leve') return { classe: 'status-manutencao_leve', texto: 'Manutenção Leve' };
+  if (s === 'locado')            return { classe: 'status-locado',            texto: 'Locado' };
+  if (s === 'manutencao_leve')   return { classe: 'status-manutencao_leve',   texto: 'Manutenção Leve' };
   if (s === 'manutencao_pesada') return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
   return { classe: 'status-disponivel', texto: 'Disponível' };
 }
 
-function filtrar(tipo, elemento) {
+function aplicarFiltros() {
+  document.querySelectorAll('.card').forEach(card => {
+    const statusOk = filtroStatusAtivo === 'todos'
+      || (filtroStatusAtivo === 'manutencao'
+          ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada')
+          : card.classList.contains(`status-${filtroStatusAtivo}`));
+
+    const kvaOk = filtroKvaAtivo === 'todos'
+      || card.dataset.faixa === filtroKvaAtivo;
+
+    card.style.display = (statusOk && kvaOk) ? '' : 'none';
+  });
+}
+
+function filtrarStatus(tipo, elemento) {
+  filtroStatusAtivo = tipo;
   document.querySelectorAll('.resumo-card').forEach(r => r.classList.remove('ativo'));
   elemento.classList.add('ativo');
+  aplicarFiltros();
+}
 
-  document.querySelectorAll('.card').forEach(card => {
-    if (tipo === 'todos') card.style.display = '';
-    else if (tipo === 'manutencao') {
-      const isM = card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada');
-      card.style.display = isM ? '' : 'none';
-    } else {
-      card.style.display = card.classList.contains(`status-${tipo}`) ? '' : 'none';
-    }
-  });
-
-  // Esconde títulos de categorias vazias após o filtro
-  document.querySelectorAll('.categoria-secao').forEach(secao => {
-    const temCardVisivel = Array.from(secao.querySelectorAll('.card')).some(c => c.style.display !== 'none');
-    secao.style.display = temCardVisivel ? '' : 'none';
-  });
+function filtrarKva(faixa, elemento) {
+  filtroKvaAtivo = faixa;
+  document.querySelectorAll('.btn-kva').forEach(b => b.classList.remove('ativo'));
+  elemento.classList.add('ativo');
+  aplicarFiltros();
 }
 
 fetch(CSV_URL).then(res => res.text()).then(text => {
   const dados = parseCSV(text);
   const mapa = {};
   dados.forEach(d => {
-    const eq = d.equipamento;
+    const eq = (d.equipamento || '').trim();
     if (eq && TODOS_EQUIPAMENTOS.includes(eq)) mapa[eq] = interpretarLocal(d.local);
   });
 
-  const container = document.getElementById('categorias-container');
-  
-  CATEGORIAS.forEach(cat => {
-    const secao = document.createElement('div');
-    secao.className = 'categoria-secao';
-    secao.innerHTML = `<div class="categoria-titulo">${cat.nome}</div><div class="painel" id="painel-${cat.nome.replace(/\s+/g, '')}"></div>`;
-    container.appendChild(secao);
+  const painel = document.getElementById('painel');
 
-    const painel = secao.querySelector('.painel');
-    TODOS_EQUIPAMENTOS.forEach(eq => {
-      if (identificarCategoria(eq) === cat.nome) {
-        const info = mapa[eq] || { status: 'disponivel', cliente: '' };
-        painel.appendChild(criarCard(eq, info));
-      }
-    });
+  TODOS_EQUIPAMENTOS.forEach(eq => {
+    const info = mapa[eq] || { status: 'disponivel', cliente: '' };
+    const { classe, texto } = mapStatus(info.status);
+    const kva = getKva(eq);
+    const faixaId = getFaixaId(eq);
 
-    if (painel.children.length === 0) secao.remove();
+    if (info.status === 'disponivel') contDisponivel++;
+    else if (info.status === 'locado') contLocado++;
+    else contManutencao++;
+
+    const card = document.createElement('div');
+    card.className = `card ${classe}`;
+    card.dataset.faixa = faixaId;
+
+    card.innerHTML = `
+      <div class="card-titulo">${eq}</div>
+      <div class="card-kva">${isNaN(kva) ? '' : kva + ' kVA'}</div>
+      <div class="status-linha ${classe}">
+        <div class="led"></div>
+        <span>${texto}</span>
+      </div>
+      ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
+    `;
+
+    painel.appendChild(card);
   });
 
   document.getElementById('cont-disponivel').textContent = contDisponivel;
