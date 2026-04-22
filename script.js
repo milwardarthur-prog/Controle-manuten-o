@@ -34,6 +34,9 @@ let contDisponivel = 0, contManutencao = 0, contLocado = 0;
 let filtroStatusAtivo = 'todos';
 let filtroKvaAtivo = 'todos';
 
+// Armazena os dados completos para o relatório
+const dadosRelatorio = { locados: [], disponiveis: [], manutencao: [] };
+
 function getKva(eq) {
   const partes = eq.split('-');
   return parseInt(partes[partes.length - 1]);
@@ -80,7 +83,6 @@ function aplicarFiltros() {
           : card.classList.contains(`status-${filtroStatusAtivo}`));
 
     const kvaOk = filtroKvaAtivo === 'todos' || card.dataset.faixa === filtroKvaAtivo;
-
     card.style.display = (statusOk && kvaOk) ? '' : 'none';
   });
 }
@@ -101,72 +103,78 @@ function filtrarKva(faixa, elemento) {
 
 function gerarRelatorio() {
   const relatorioContainer = document.getElementById('conteudo-relatorio');
+  const resumoContainer    = document.getElementById('resumo-relatorio');
   relatorioContainer.innerHTML = '';
+  resumoContainer.innerHTML    = '';
 
+  // Data
   const data = new Date().toLocaleDateString('pt-BR', {
     day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
   });
   document.getElementById('data-relatorio').textContent = `Gerado em: ${data}`;
 
-  const cards = Array.from(document.querySelectorAll('.card'));
+  // Contadores no relatório
+  const total = contLocado + contDisponivel + contManutencao;
+  resumoContainer.innerHTML = `
+    <div class="contador-box contador-total">
+      <span class="num">${total}</span>
+      <span class="label">Total</span>
+    </div>
+    <div class="contador-box contador-locado">
+      <span class="num">${contLocado}</span>
+      <span class="label">Locados</span>
+    </div>
+    <div class="contador-box contador-disponivel">
+      <span class="num">${contDisponivel}</span>
+      <span class="label">Disponíveis</span>
+    </div>
+    <div class="contador-box contador-manutencao">
+      <span class="num">${contManutencao}</span>
+      <span class="label">Manutenção</span>
+    </div>
+  `;
 
-  const categorias = [
-    { titulo: '📦 EQUIPAMENTOS LOCADOS',         status: 'status-locado'     },
-    { titulo: '✅ EQUIPAMENTOS DISPONÍVEIS',      status: 'status-disponivel' },
-    { titulo: '🛠️ EQUIPAMENTOS EM MANUTENÇÃO',   status: 'status-manutencao' }
-  ];
-
-  categorias.forEach(cat => {
-    let cardsFiltrados;
-    if (cat.status === 'status-manutencao') {
-      cardsFiltrados = cards.filter(c =>
-        c.classList.contains('status-manutencao_leve') ||
-        c.classList.contains('status-manutencao_pesada')
-      );
-    } else {
-      cardsFiltrados = cards.filter(c => c.classList.contains(cat.status));
-    }
-
-    if (cardsFiltrados.length === 0) return;
-
+  // ---- SEÇÃO LOCADOS ----
+  if (dadosRelatorio.locados.length > 0) {
+    const locadosOrdenados = [...dadosRelatorio.locados].sort((a, b) => a.nome.localeCompare(b.nome));
     const secao = document.createElement('div');
     secao.className = 'secao-relatorio';
-
-    let tabelaHtml = `
-      <div class="secao-titulo">${cat.titulo} (${cardsFiltrados.length})</div>
-      <table class="tabela-relatorio">
-        <thead>
-          <tr>
-            <th>Equipamento</th>
-            <th>Potência</th>
-            <th>Status</th>
-            <th>Cliente / Local</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-
-    cardsFiltrados.forEach(c => {
-      const nome     = c.querySelector('.card-titulo').textContent;
-      const kva      = c.querySelector('.card-kva').textContent;
-      const statusTxt = c.querySelector('.status-linha span').textContent;
-      const clienteEl = c.querySelector('.cliente');
-      const clienteTxt = clienteEl ? clienteEl.textContent.replace('Cliente: ', '') : '-';
-
-      tabelaHtml += `
-        <tr>
-          <td>${nome}</td>
-          <td>${kva}</td>
-          <td>${statusTxt}</td>
-          <td>${clienteTxt}</td>
-        </tr>
-      `;
+    let html = `<div class="secao-titulo">📦 EQUIPAMENTOS LOCADOS (${locadosOrdenados.length})</div><ul class="lista-relatorio">`;
+    locadosOrdenados.forEach(item => {
+      html += `<li><span>${item.nome}</span> — ${item.cliente}</li>`;
     });
-
-    tabelaHtml += `</tbody></table>`;
-    secao.innerHTML = tabelaHtml;
+    html += `</ul>`;
+    secao.innerHTML = html;
     relatorioContainer.appendChild(secao);
-  });
+  }
+
+  // ---- SEÇÃO DISPONÍVEIS ----
+  if (dadosRelatorio.disponiveis.length > 0) {
+    const disponiveisOrdenados = [...dadosRelatorio.disponiveis].sort((a, b) => a.localeCompare(b));
+    const secao = document.createElement('div');
+    secao.className = 'secao-relatorio';
+    let html = `<div class="secao-titulo">✅ EQUIPAMENTOS DISPONÍVEIS (${disponiveisOrdenados.length})</div><ul class="lista-relatorio">`;
+    disponiveisOrdenados.forEach(nome => {
+      html += `<li><span>${nome}</span> — Disponível</li>`;
+    });
+    html += `</ul>`;
+    secao.innerHTML = html;
+    relatorioContainer.appendChild(secao);
+  }
+
+  // ---- SEÇÃO MANUTENÇÃO ----
+  if (dadosRelatorio.manutencao.length > 0) {
+    const manutencaoOrdenada = [...dadosRelatorio.manutencao].sort((a, b) => a.nome.localeCompare(b.nome));
+    const secao = document.createElement('div');
+    secao.className = 'secao-relatorio';
+    let html = `<div class="secao-titulo">🛠️ EQUIPAMENTOS EM MANUTENÇÃO (${manutencaoOrdenada.length})</div><ul class="lista-relatorio">`;
+    manutencaoOrdenada.forEach(item => {
+      html += `<li><span>${item.nome}</span> — ${item.tipo}</li>`;
+    });
+    html += `</ul>`;
+    secao.innerHTML = html;
+    relatorioContainer.appendChild(secao);
+  }
 
   window.print();
 }
@@ -187,9 +195,20 @@ fetch(CSV_URL).then(res => res.text()).then(text => {
     const kva = getKva(eq);
     const faixaId = getFaixaId(eq);
 
-    if (info.status === 'disponivel') contDisponivel++;
-    else if (info.status === 'locado') contLocado++;
-    else contManutencao++;
+    // Armazena para o relatório
+    if (info.status === 'disponivel') {
+      contDisponivel++;
+      dadosRelatorio.disponiveis.push(eq);
+    } else if (info.status === 'locado') {
+      contLocado++;
+      dadosRelatorio.locados.push({ nome: eq, cliente: info.cliente });
+    } else {
+      contManutencao++;
+      dadosRelatorio.manutencao.push({
+        nome: eq,
+        tipo: info.status === 'manutencao_pesada' ? 'Manutenção Pesada' : 'Manutenção Leve'
+      });
+    }
 
     const card = document.createElement('div');
     card.className = `card ${classe}`;

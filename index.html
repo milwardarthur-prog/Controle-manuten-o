@@ -10,15 +10,15 @@
   <div class="no-print">
     <h1>Painel de Equipamentos</h1>
 
+    <div class="topo-direito">
+      <button onclick="gerarRelatorio()" class="btn-print">🖨️ Gerar Relatório Impresso</button>
+    </div>
+
     <div class="resumo">
       <div class="resumo-card ativo" onclick="filtrarStatus('todos', this)">⚪ Total: <span id="cont-total">0</span></div>
       <div class="resumo-card" onclick="filtrarStatus('disponivel', this)">🟢 Disponíveis: <span id="cont-disponivel">0</span></div>
       <div class="resumo-card" onclick="filtrarStatus('manutencao', this)">🔴 Manutenção: <span id="cont-manutencao">0</span></div>
       <div class="resumo-card" onclick="filtrarStatus('locado', this)">🔵 Locados: <span id="cont-locado">0</span></div>
-    </div>
-
-    <div style="text-align:center; margin-bottom: 20px;">
-      <button onclick="gerarRelatorio()" class="btn-print">🖨️ Gerar Relatório Impresso</button>
     </div>
 
     <div class="filtros-kva">
@@ -43,6 +43,7 @@
       <h2>Relatório de Status de Equipamentos</h2>
       <p id="data-relatorio"></p>
     </div>
+    <div id="resumo-relatorio" class="resumo-impressao"></div>
     <div id="conteudo-relatorio"></div>
   </div>
 
