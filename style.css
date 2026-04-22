@@ -38,11 +38,43 @@ h1 {
 }
 
 #cont-manutencao {
-  color: #ffdd00;
+  color: #ff3333;
 }
 
 #cont-locado {
   color: #00aaff;
+}
+
+/* FILTROS */
+.filtros {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-filtro {
+  background: #333;
+  color: #eee;
+  border: 2px solid #555;
+  padding: 8px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.btn-filtro:hover {
+  background: #444;
+  border-color: #888;
+}
+
+.btn-filtro.ativo {
+  background: #555;
+  border-color: #fff;
+  color: #fff;
+  font-weight: bold;
 }
 
 /* PAINEL */

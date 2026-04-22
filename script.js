@@ -20,33 +20,27 @@ const TODOS_EQUIPAMENTOS = [
 
 const CSV_URL = 'dados.csv';
 
-// CONTADORES
 let contDisponivel = 0;
 let contManutencao = 0;
 let contLocado = 0;
 
-// CSV
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
   const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
-
   const dados = [];
 
   for (let i = 1; i < linhas.length; i++) {
     const colunas = linhas[i].split(',').map(c => c.trim());
     const obj = {};
-
     cabecalho.forEach((col, idx) => {
       obj[col] = colunas[idx] || '';
     });
-
     dados.push(obj);
   }
 
   return dados;
 }
 
-// INTERPRETAÇÃO
 function interpretarLocal(localBruto) {
   if (!localBruto) {
     return { status: 'locado', cliente: '' };
@@ -60,33 +54,30 @@ function interpretarLocal(localBruto) {
     return { status: 'manutencao_pesada', cliente: '' };
   }
 
-  if (texto.includes('manutencao')) {
+  if (texto.includes('manutencao') || texto.includes('leve')) {
     return { status: 'manutencao_leve', cliente: '' };
   }
 
   return { status: 'locado', cliente: localBruto };
 }
 
-// MAPA STATUS
 function mapStatus(status) {
   switch (status) {
     case 'locado':
       return { classe: 'status-locado', texto: 'Locado' };
     case 'manutencao_leve':
-      return { classe: 'status-manutencao_leve', texto: 'Manutenção leve' };
+      return { classe: 'status-manutencao_leve', texto: 'Manutenção Leve' };
     case 'manutencao_pesada':
-      return { classe: 'status-manutencao_pesada', texto: 'Manutenção pesada' };
+      return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
     default:
       return { classe: 'status-disponivel', texto: 'Disponível' };
   }
 }
 
-// CARD
 function criarCard(equipamento, status, cliente) {
   const painel = document.getElementById('painel');
   const { classe, texto } = mapStatus(status);
 
-  // CONTADORES
   if (status === 'disponivel') contDisponivel++;
   else if (status === 'locado') contLocado++;
   else contManutencao++;
@@ -106,7 +97,26 @@ function criarCard(equipamento, status, cliente) {
   painel.appendChild(card);
 }
 
-// LOAD
+function filtrar(tipo, botao) {
+  const cards = document.querySelectorAll('.card');
+  const botoes = document.querySelectorAll('.btn-filtro');
+
+  botoes.forEach(b => b.classList.remove('ativo'));
+  botao.classList.add('ativo');
+
+  cards.forEach(card => {
+    if (tipo === 'todos') {
+      card.style.display = '';
+    } else if (tipo === 'manutencao') {
+      const visivel = card.classList.contains('status-manutencao_leve') ||
+                      card.classList.contains('status-manutencao_pesada');
+      card.style.display = visivel ? '' : 'none';
+    } else {
+      card.style.display = card.classList.contains(`status-${tipo}`) ? '' : 'none';
+    }
+  });
+}
+
 fetch(CSV_URL)
   .then(res => res.text())
   .then(text => {
@@ -124,7 +134,6 @@ fetch(CSV_URL)
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq];
-
       if (!info) {
         criarCard(eq, 'disponivel', '');
       } else {
@@ -132,7 +141,6 @@ fetch(CSV_URL)
       }
     });
 
-    // ATUALIZA CONTADORES
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
