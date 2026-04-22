@@ -10,17 +10,10 @@
   <h1>Painel de Equipamentos</h1>
 
   <div class="resumo">
-    <div>🟢 Disponíveis: <span id="cont-disponivel">0</span></div>
-    <div>🔴 Manutenção: <span id="cont-manutencao">0</span></div>
-    <div>🔵 Locados: <span id="cont-locado">0</span></div>
-    <div>⚪ Total: <span id="cont-total">0</span></div>
-  </div>
-
-  <div class="filtros">
-    <button class="btn-filtro ativo" onclick="filtrar('todos', this)">Todos</button>
-    <button class="btn-filtro" onclick="filtrar('disponivel', this)">🟢 Disponíveis</button>
-    <button class="btn-filtro" onclick="filtrar('locado', this)">🔵 Locados</button>
-    <button class="btn-filtro" onclick="filtrar('manutencao', this)">🔴 Manutenção</button>
+    <div class="resumo-card ativo" onclick="filtrar('todos', this)">⚪ Total: <span id="cont-total">0</span></div>
+    <div class="resumo-card" onclick="filtrar('disponivel', this)">🟢 Disponíveis: <span id="cont-disponivel">0</span></div>
+    <div class="resumo-card" onclick="filtrar('manutencao', this)">🔴 Manutenção: <span id="cont-manutencao">0</span></div>
+    <div class="resumo-card" onclick="filtrar('locado', this)">🔵 Locados: <span id="cont-locado">0</span></div>
   </div>
 
   <div id="painel" class="painel"></div>

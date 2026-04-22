@@ -42,35 +42,24 @@ function parseCSV(text) {
 }
 
 function interpretarLocal(localBruto) {
-  if (!localBruto) {
-    return { status: 'locado', cliente: '' };
-  }
+  if (!localBruto) return { status: 'locado', cliente: '' };
 
   const texto = localBruto.toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
 
-  if (texto.includes('pesada')) {
-    return { status: 'manutencao_pesada', cliente: '' };
-  }
-
-  if (texto.includes('manutencao') || texto.includes('leve')) {
-    return { status: 'manutencao_leve', cliente: '' };
-  }
+  if (texto.includes('pesada')) return { status: 'manutencao_pesada', cliente: '' };
+  if (texto.includes('manutencao') || texto.includes('leve')) return { status: 'manutencao_leve', cliente: '' };
 
   return { status: 'locado', cliente: localBruto };
 }
 
 function mapStatus(status) {
   switch (status) {
-    case 'locado':
-      return { classe: 'status-locado', texto: 'Locado' };
-    case 'manutencao_leve':
-      return { classe: 'status-manutencao_leve', texto: 'Manutenção Leve' };
-    case 'manutencao_pesada':
-      return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
-    default:
-      return { classe: 'status-disponivel', texto: 'Disponível' };
+    case 'locado':           return { classe: 'status-locado',           texto: 'Locado' };
+    case 'manutencao_leve':  return { classe: 'status-manutencao_leve',  texto: 'Manutenção Leve' };
+    case 'manutencao_pesada':return { classe: 'status-manutencao_pesada',texto: 'Manutenção Pesada' };
+    default:                 return { classe: 'status-disponivel',        texto: 'Disponível' };
   }
 }
 
@@ -97,12 +86,12 @@ function criarCard(equipamento, status, cliente) {
   painel.appendChild(card);
 }
 
-function filtrar(tipo, botao) {
+function filtrar(tipo, elemento) {
   const cards = document.querySelectorAll('.card');
-  const botoes = document.querySelectorAll('.btn-filtro');
+  const resumos = document.querySelectorAll('.resumo-card');
 
-  botoes.forEach(b => b.classList.remove('ativo'));
-  botao.classList.add('ativo');
+  resumos.forEach(r => r.classList.remove('ativo'));
+  elemento.classList.add('ativo');
 
   cards.forEach(card => {
     if (tipo === 'todos') {
@@ -126,24 +115,18 @@ fetch(CSV_URL)
     linhas.forEach(linha => {
       const eq = (linha['equipamento'] || '').trim();
       const local = (linha['local'] || '').trim();
-
       if (!eq || !TODOS_EQUIPAMENTOS.includes(eq)) return;
-
       mapa[eq] = interpretarLocal(local);
     });
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq];
-      if (!info) {
-        criarCard(eq, 'disponivel', '');
-      } else {
-        criarCard(eq, info.status, info.cliente);
-      }
+      if (!info) criarCard(eq, 'disponivel', '');
+      else criarCard(eq, info.status, info.cliente);
     });
 
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
-    document.getElementById('cont-total').textContent =
-      contDisponivel + contManutencao + contLocado;
+    document.getElementById('cont-total').textContent = contDisponivel + contManutencao + contLocado;
   });
