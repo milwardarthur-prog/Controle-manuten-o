@@ -19,7 +19,7 @@ const TODOS_EQUIPAMENTOS = [
 ];
 
 const FAIXAS_KVA = [
-  { id: '10-39', min: 10, max: 39 },
+  { id: '10-39',   min: 10,  max: 39  },
   { id: '40-65',   min: 40,  max: 65  },
   { id: '70-90',   min: 70,  max: 90  },
   { id: '100-130', min: 100, max: 130 },
@@ -31,8 +31,6 @@ const FAIXAS_KVA = [
 
 const CSV_URL = 'dados.csv';
 let contDisponivel = 0, contManutencao = 0, contLocado = 0;
-
-// Filtros ativos
 let filtroStatusAtivo = 'todos';
 let filtroKvaAtivo = 'todos';
 
@@ -81,8 +79,7 @@ function aplicarFiltros() {
           ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada')
           : card.classList.contains(`status-${filtroStatusAtivo}`));
 
-    const kvaOk = filtroKvaAtivo === 'todos'
-      || card.dataset.faixa === filtroKvaAtivo;
+    const kvaOk = filtroKvaAtivo === 'todos' || card.dataset.faixa === filtroKvaAtivo;
 
     card.style.display = (statusOk && kvaOk) ? '' : 'none';
   });
@@ -100,6 +97,78 @@ function filtrarKva(faixa, elemento) {
   document.querySelectorAll('.btn-kva').forEach(b => b.classList.remove('ativo'));
   elemento.classList.add('ativo');
   aplicarFiltros();
+}
+
+function gerarRelatorio() {
+  const relatorioContainer = document.getElementById('conteudo-relatorio');
+  relatorioContainer.innerHTML = '';
+
+  const data = new Date().toLocaleDateString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+  });
+  document.getElementById('data-relatorio').textContent = `Gerado em: ${data}`;
+
+  const cards = Array.from(document.querySelectorAll('.card'));
+
+  const categorias = [
+    { titulo: '📦 EQUIPAMENTOS LOCADOS',         status: 'status-locado'     },
+    { titulo: '✅ EQUIPAMENTOS DISPONÍVEIS',      status: 'status-disponivel' },
+    { titulo: '🛠️ EQUIPAMENTOS EM MANUTENÇÃO',   status: 'status-manutencao' }
+  ];
+
+  categorias.forEach(cat => {
+    let cardsFiltrados;
+    if (cat.status === 'status-manutencao') {
+      cardsFiltrados = cards.filter(c =>
+        c.classList.contains('status-manutencao_leve') ||
+        c.classList.contains('status-manutencao_pesada')
+      );
+    } else {
+      cardsFiltrados = cards.filter(c => c.classList.contains(cat.status));
+    }
+
+    if (cardsFiltrados.length === 0) return;
+
+    const secao = document.createElement('div');
+    secao.className = 'secao-relatorio';
+
+    let tabelaHtml = `
+      <div class="secao-titulo">${cat.titulo} (${cardsFiltrados.length})</div>
+      <table class="tabela-relatorio">
+        <thead>
+          <tr>
+            <th>Equipamento</th>
+            <th>Potência</th>
+            <th>Status</th>
+            <th>Cliente / Local</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+
+    cardsFiltrados.forEach(c => {
+      const nome     = c.querySelector('.card-titulo').textContent;
+      const kva      = c.querySelector('.card-kva').textContent;
+      const statusTxt = c.querySelector('.status-linha span').textContent;
+      const clienteEl = c.querySelector('.cliente');
+      const clienteTxt = clienteEl ? clienteEl.textContent.replace('Cliente: ', '') : '-';
+
+      tabelaHtml += `
+        <tr>
+          <td>${nome}</td>
+          <td>${kva}</td>
+          <td>${statusTxt}</td>
+          <td>${clienteTxt}</td>
+        </tr>
+      `;
+    });
+
+    tabelaHtml += `</tbody></table>`;
+    secao.innerHTML = tabelaHtml;
+    relatorioContainer.appendChild(secao);
+  });
+
+  window.print();
 }
 
 fetch(CSV_URL).then(res => res.text()).then(text => {

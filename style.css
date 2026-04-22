@@ -36,26 +36,30 @@ h1 {
   font-size: 0.9rem;
 }
 
-.resumo-card:hover {
-  background: #333;
-  border-color: #666;
-}
-
-.resumo-card.ativo {
-  border-color: #fff;
-  background: #333;
-  font-weight: bold;
-}
-
-.resumo-card span {
-  font-weight: bold;
-  font-size: 1.2rem;
-}
+.resumo-card:hover { background: #333; border-color: #666; }
+.resumo-card.ativo { border-color: #fff; background: #333; font-weight: bold; }
+.resumo-card span { font-weight: bold; font-size: 1.2rem; }
 
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
 #cont-locado     { color: #00aaff; }
 #cont-total      { color: #ffffff; }
+
+/* =========================
+   BOTÃO IMPRIMIR
+========================= */
+.btn-print {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.95rem;
+}
+
+.btn-print:hover { background: #0056b3; }
 
 /* =========================
    FILTROS KVA
@@ -71,10 +75,7 @@ h1 {
   justify-content: flex-start;
 }
 
-/* Esconde scrollbar (mais limpo no mobile) */
-.filtros-kva::-webkit-scrollbar {
-  display: none;
-}
+.filtros-kva::-webkit-scrollbar { display: none; }
 
 .btn-kva {
   background: #222;
@@ -89,17 +90,8 @@ h1 {
   white-space: nowrap;
 }
 
-.btn-kva:hover {
-  background: #333;
-  border-color: #888;
-}
-
-.btn-kva.ativo {
-  background: #444;
-  border-color: #fff;
-  color: #fff;
-  font-weight: bold;
-}
+.btn-kva:hover { background: #333; border-color: #888; }
+.btn-kva.ativo { background: #444; border-color: #fff; color: #fff; font-weight: bold; }
 
 /* =========================
    PAINEL / CARDS
@@ -120,48 +112,16 @@ h1 {
   gap: 6px;
 }
 
-.card-titulo {
-  font-weight: bold;
-  font-size: 1.05rem;
-}
+.card-titulo { font-weight: bold; font-size: 1.05rem; }
+.card-kva { font-size: 0.8rem; color: #aaa; }
+.status-linha { display: flex; align-items: center; gap: 8px; }
 
-.card-kva {
-  font-size: 0.8rem;
-  color: #aaa;
-}
+.led { width: 13px; height: 13px; border-radius: 50%; }
 
-.status-linha {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.led {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-}
-
-/* STATUS */
-.status-disponivel .led {
-  background: #00ff66;
-  box-shadow: 0 0 10px #00ff66;
-}
-
-.status-locado .led {
-  background: #00aaff;
-  box-shadow: 0 0 10px #00aaff;
-}
-
-.status-manutencao_leve .led {
-  background: #ffdd00;
-  box-shadow: 0 0 10px #ffdd00;
-}
-
-.status-manutencao_pesada .led {
-  background: #ff3333;
-  box-shadow: 0 0 10px #ff3333;
-}
+.status-disponivel .led    { background: #00ff66; box-shadow: 0 0 10px #00ff66; }
+.status-locado .led        { background: #00aaff; box-shadow: 0 0 10px #00aaff; }
+.status-manutencao_leve .led  { background: #ffdd00; box-shadow: 0 0 10px #ffdd00; }
+.status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 10px #ff3333; }
 
 .cliente {
   font-size: 0.8rem;
@@ -189,11 +149,56 @@ h1 {
    CELULARES MUITO PEQUENOS
 ========================= */
 @media (max-width: 400px) {
-  .painel {
-    grid-template-columns: 1fr;
+  .painel { grid-template-columns: 1fr; }
+  h1 { font-size: 1.5rem; }
+}
+
+/* =========================
+   RELATÓRIO DE IMPRESSÃO
+========================= */
+.only-print { display: none; }
+
+@media print {
+  .no-print { display: none !important; }
+  .only-print { display: block !important; }
+
+  body { background: white !important; color: black !important; padding: 10px; }
+
+  .header-relatorio {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #333;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
   }
 
-  h1 {
-    font-size: 1.5rem;
+  .header-relatorio h2 { margin: 0; font-size: 1.3rem; }
+  .header-relatorio p  { margin: 0; font-size: 0.9rem; color: #555; }
+
+  .secao-relatorio { margin-bottom: 30px; }
+
+  .secao-titulo {
+    font-size: 1.1rem;
+    font-weight: bold;
+    background: #f0f0f0;
+    padding: 6px 12px;
+    border-left: 5px solid #333;
+    margin-bottom: 10px;
   }
+
+  .tabela-relatorio {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .tabela-relatorio th, .tabela-relatorio td {
+    border: 1px solid #ddd;
+    padding: 7px 10px;
+    text-align: left;
+    font-size: 0.85rem;
+  }
+
+  .tabela-relatorio th { background-color: #f8f8f8; font-weight: bold; }
+  .tabela-relatorio tr:nth-child(even) { background-color: #fafafa; }
 }
