@@ -19,7 +19,7 @@ const TODOS_EQUIPAMENTOS = [
 ];
 
 const FAIXAS_KVA = [
-  { id: '10-30',   min: 10,  max: 30  },
+  { id: '10-39', min: 10, max: 39 },
   { id: '40-65',   min: 40,  max: 65  },
   { id: '70-90',   min: 70,  max: 90  },
   { id: '100-130', min: 100, max: 130 },
