@@ -34,9 +34,6 @@ let contDisponivel = 0, contManutencao = 0, contLocado = 0;
 let filtroStatusAtivo = 'todos';
 let filtroKvaAtivo = 'todos';
 
-// Armazena os dados completos para o relatório
-const dadosRelatorio = { locados: [], disponiveis: [], manutencao: [] };
-
 function getKva(eq) {
   const partes = eq.split('-');
   return parseInt(partes[partes.length - 1]);
@@ -50,22 +47,37 @@ function getFaixaId(eq) {
 }
 
 function parseCSV(text) {
-  const linhas = text.trim().split('\n');
-  const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
+  const clean = text.replace(/^\uFEFF/, '').trim();
+  const linhas = clean.split(/\r?\n/).filter(l => l.trim() !== '');
+  if (linhas.length === 0) return [];
   return linhas.slice(1).map(linha => {
-    const colunas = linha.split(',').map(c => c.trim());
-    const obj = {};
-    cabecalho.forEach((col, idx) => obj[col] = colunas[idx] || '');
-    return obj;
+    const idx = linha.indexOf(',');
+    if (idx === -1) return { equipamento: linha.trim(), local: '' };
+    return {
+      equipamento: linha.substring(0, idx).trim(),
+      local: linha.substring(idx + 1).trim()
+    };
   });
 }
 
 function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'locado', cliente: '' };
-  const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (texto.includes('pesada')) return { status: 'manutencao_pesada', cliente: '' };
-  if (texto.includes('manutencao') || texto.includes('leve')) return { status: 'manutencao_leve', cliente: '' };
-  return { status: 'locado', cliente: localBruto };
+  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '' };
+  const original = localBruto.trim();
+  const texto = original.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (texto.includes('pesada')) {
+    const obs = original.replace(/manutencao\s*pesada/ig, '').replace(/^[\s\-–—]+/, '').trim();
+    return { status: 'manutencao_pesada', cliente: '', obs };
+  }
+  if (texto.includes('manutencao') || texto.includes('leve')) {
+    const obs = original
+      .replace(/manutencao\s*leve/ig, '')
+      .replace(/manutencao/ig, '')
+      .replace(/leve/ig, '')
+      .replace(/^[\s\-–—]+/, '')
+      .trim();
+    return { status: 'manutencao_leve', cliente: '', obs };
+  }
+  return { status: 'locado', cliente: original, obs: '' };
 }
 
 function mapStatus(s) {
@@ -81,7 +93,6 @@ function aplicarFiltros() {
       || (filtroStatusAtivo === 'manutencao'
           ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada')
           : card.classList.contains(`status-${filtroStatusAtivo}`));
-
     const kvaOk = filtroKvaAtivo === 'todos' || card.dataset.faixa === filtroKvaAtivo;
     card.style.display = (statusOk && kvaOk) ? '' : 'none';
   });
@@ -101,134 +112,48 @@ function filtrarKva(faixa, elemento) {
   aplicarFiltros();
 }
 
-function gerarRelatorio() {
-  const relatorioContainer = document.getElementById('conteudo-relatorio');
-  const resumoContainer    = document.getElementById('resumo-relatorio');
-  relatorioContainer.innerHTML = '';
-  resumoContainer.innerHTML    = '';
-
-  // Data
-  const data = new Date().toLocaleDateString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-  });
-  document.getElementById('data-relatorio').textContent = `Gerado em: ${data}`;
-
-  // Contadores no relatório
-  const total = contLocado + contDisponivel + contManutencao;
-  resumoContainer.innerHTML = `
-    <div class="contador-box contador-total">
-      <span class="num">${total}</span>
-      <span class="label">Total</span>
-    </div>
-    <div class="contador-box contador-locado">
-      <span class="num">${contLocado}</span>
-      <span class="label">Locados</span>
-    </div>
-    <div class="contador-box contador-disponivel">
-      <span class="num">${contDisponivel}</span>
-      <span class="label">Disponíveis</span>
-    </div>
-    <div class="contador-box contador-manutencao">
-      <span class="num">${contManutencao}</span>
-      <span class="label">Manutenção</span>
-    </div>
-  `;
-
-  // ---- SEÇÃO LOCADOS ----
-  if (dadosRelatorio.locados.length > 0) {
-    const locadosOrdenados = [...dadosRelatorio.locados].sort((a, b) => a.nome.localeCompare(b.nome));
-    const secao = document.createElement('div');
-    secao.className = 'secao-relatorio';
-    let html = `<div class="secao-titulo">📦 EQUIPAMENTOS LOCADOS (${locadosOrdenados.length})</div><ul class="lista-relatorio">`;
-    locadosOrdenados.forEach(item => {
-      html += `<li><span>${item.nome}</span> — ${item.cliente}</li>`;
+fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
+  .then(res => res.text())
+  .then(text => {
+    const dados = parseCSV(text);
+    const mapa = {};
+    dados.forEach(d => {
+      const eq = (d.equipamento || '').trim();
+      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) mapa[eq] = interpretarLocal(d.local);
     });
-    html += `</ul>`;
-    secao.innerHTML = html;
-    relatorioContainer.appendChild(secao);
-  }
 
-  // ---- SEÇÃO DISPONÍVEIS ----
-  if (dadosRelatorio.disponiveis.length > 0) {
-    const disponiveisOrdenados = [...dadosRelatorio.disponiveis].sort((a, b) => a.localeCompare(b));
-    const secao = document.createElement('div');
-    secao.className = 'secao-relatorio';
-    let html = `<div class="secao-titulo">✅ EQUIPAMENTOS DISPONÍVEIS (${disponiveisOrdenados.length})</div><ul class="lista-relatorio">`;
-    disponiveisOrdenados.forEach(nome => {
-      html += `<li><span>${nome}</span> — Disponível</li>`;
+    const painel = document.getElementById('painel');
+
+    TODOS_EQUIPAMENTOS.forEach(eq => {
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '' };
+      const { classe, texto } = mapStatus(info.status);
+      const kva = getKva(eq);
+      const faixaId = getFaixaId(eq);
+
+      if (info.status === 'disponivel') contDisponivel++;
+      else if (info.status === 'locado') contLocado++;
+      else contManutencao++;
+
+      const card = document.createElement('div');
+      card.className = `card ${classe}`;
+      card.dataset.faixa = faixaId;
+
+      card.innerHTML = `
+        <div class="card-titulo">${eq}</div>
+        <div class="card-kva">${isNaN(kva) ? '' : kva + ' kVA'}</div>
+        <div class="status-linha ${classe}">
+          <div class="led"></div>
+          <span>${texto}</span>
+        </div>
+        ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
+        ${info.obs ? `<div class="obs">📋 ${info.obs}</div>` : ''}
+      `;
+
+      painel.appendChild(card);
     });
-    html += `</ul>`;
-    secao.innerHTML = html;
-    relatorioContainer.appendChild(secao);
-  }
 
-  // ---- SEÇÃO MANUTENÇÃO ----
-  if (dadosRelatorio.manutencao.length > 0) {
-    const manutencaoOrdenada = [...dadosRelatorio.manutencao].sort((a, b) => a.nome.localeCompare(b.nome));
-    const secao = document.createElement('div');
-    secao.className = 'secao-relatorio';
-    let html = `<div class="secao-titulo">🛠️ EQUIPAMENTOS EM MANUTENÇÃO (${manutencaoOrdenada.length})</div><ul class="lista-relatorio">`;
-    manutencaoOrdenada.forEach(item => {
-      html += `<li><span>${item.nome}</span> — ${item.tipo}</li>`;
-    });
-    html += `</ul>`;
-    secao.innerHTML = html;
-    relatorioContainer.appendChild(secao);
-  }
-
-  window.print();
-}
-
-fetch(CSV_URL).then(res => res.text()).then(text => {
-  const dados = parseCSV(text);
-  const mapa = {};
-  dados.forEach(d => {
-    const eq = (d.equipamento || '').trim();
-    if (eq && TODOS_EQUIPAMENTOS.includes(eq)) mapa[eq] = interpretarLocal(d.local);
+    document.getElementById('cont-disponivel').textContent = contDisponivel;
+    document.getElementById('cont-manutencao').textContent = contManutencao;
+    document.getElementById('cont-locado').textContent = contLocado;
+    document.getElementById('cont-total').textContent = contDisponivel + contManutencao + contLocado;
   });
-
-  const painel = document.getElementById('painel');
-
-  TODOS_EQUIPAMENTOS.forEach(eq => {
-    const info = mapa[eq] || { status: 'disponivel', cliente: '' };
-    const { classe, texto } = mapStatus(info.status);
-    const kva = getKva(eq);
-    const faixaId = getFaixaId(eq);
-
-    // Armazena para o relatório
-    if (info.status === 'disponivel') {
-      contDisponivel++;
-      dadosRelatorio.disponiveis.push(eq);
-    } else if (info.status === 'locado') {
-      contLocado++;
-      dadosRelatorio.locados.push({ nome: eq, cliente: info.cliente });
-    } else {
-      contManutencao++;
-      dadosRelatorio.manutencao.push({
-        nome: eq,
-        tipo: info.status === 'manutencao_pesada' ? 'Manutenção Pesada' : 'Manutenção Leve'
-      });
-    }
-
-    const card = document.createElement('div');
-    card.className = `card ${classe}`;
-    card.dataset.faixa = faixaId;
-
-    card.innerHTML = `
-      <div class="card-titulo">${eq}</div>
-      <div class="card-kva">${isNaN(kva) ? '' : kva + ' kVA'}</div>
-      <div class="status-linha ${classe}">
-        <div class="led"></div>
-        <span>${texto}</span>
-      </div>
-      ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
-    `;
-
-    painel.appendChild(card);
-  });
-
-  document.getElementById('cont-disponivel').textContent = contDisponivel;
-  document.getElementById('cont-manutencao').textContent = contManutencao;
-  document.getElementById('cont-locado').textContent = contLocado;
-  document.getElementById('cont-total').textContent = contDisponivel + contManutencao + contLocado;
-});
