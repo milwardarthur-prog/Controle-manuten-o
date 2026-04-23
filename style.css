@@ -43,7 +43,7 @@ h1 {
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
 #cont-locado     { color: #00aaff; }
-#cont-total      { color: #ffff; }
+#cont-total      { color: #ffffff; }
 
 /* ====
    FILTROS KVA
@@ -96,9 +96,35 @@ h1 {
   gap: 6px;
 }
 
+/* ====
+   CARD HEADER (titulo + prazo na mesma linha)
+==== */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+}
+
 .card-titulo { font-weight: bold; font-size: 1.05rem; }
 .card-kva    { font-size: 0.8rem; color: #aaa; }
 
+/* ====
+   PRAZO (só cor do texto, sem badge)
+==== */
+.prazo {
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #aaa;
+  white-space: nowrap;
+}
+
+.prazo.hoje    { color: #ffdd00; }
+.prazo.vencido { color: #ff3333; }
+
+/* ====
+   STATUS
+==== */
 .status-linha { display: flex; align-items: center; gap: 8px; }
 
 .led { width: 13px; height: 13px; border-radius: 50%; }
@@ -114,6 +140,12 @@ h1 {
   border-top: 1px solid #333;
   padding-top: 5px;
   margin-top: 3px;
+}
+
+.obs {
+  font-size: 0.8rem;
+  color: #bbb;
+  margin-top: 2px;
 }
 
 /* ====

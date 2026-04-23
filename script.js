@@ -60,24 +60,67 @@ function parseCSV(text) {
   });
 }
 
+// Compara prazo (dd/mm) com hoje
+// Retorna: 'vencido', 'hoje' ou 'ok'
+function classificarPrazo(prazoStr) {
+  if (!prazoStr) return 'ok';
+
+  const partes = prazoStr.trim().split('/');
+  if (partes.length < 2) return 'ok';
+
+  const hoje = new Date();
+  const dia  = parseInt(partes[0]);
+  const mes  = parseInt(partes[1]) - 1; // mês base 0
+  const ano  = partes[2] ? parseInt(partes[2]) : hoje.getFullYear();
+
+  const dataPrazo = new Date(ano, mes, dia);
+  const dataHoje  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
+  if (dataPrazo < dataHoje) return 'vencido';
+  if (dataPrazo.getTime() === dataHoje.getTime()) return 'hoje';
+  return 'ok';
+}
+
 function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '' };
+  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: '' };
+
   const original = localBruto.trim();
   const texto = original.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (texto.includes('pesada')) {
-    const obs = original.replace(/manutencao\s*pesada/ig, '').replace(/^[\s\-–—]+/, '').trim();
-    return { status: 'manutencao_pesada', cliente: '', obs };
+
+  // Extrai prazo se existir (formato: | Prazo: dd/mm ou | Prazo: dd/mm/aaaa)
+  let prazo = '';
+  let semPrazo = original;
+
+  const prazoMatch = original.match(/\|\s*[Pp]razo\s*:\s*([\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/);
+  if (prazoMatch) {
+    prazo = prazoMatch[1];
+    semPrazo = original.substring(0, original.indexOf('|')).trim();
   }
-  if (texto.includes('manutencao') || texto.includes('leve')) {
-    const obs = original
-      .replace(/manutencao\s*leve/ig, '')
-      .replace(/manutencao/ig, '')
-      .replace(/leve/ig, '')
+
+  const textoSemPrazo = semPrazo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  if (textoSemPrazo.includes('pesada')) {
+    const obs = semPrazo
+      .replace(/[Mm]anutencao\s*[Pp]esada/ig, '')
+      .replace(/[Mm]anutenção\s*[Pp]esada/ig, '')
       .replace(/^[\s\-–—]+/, '')
       .trim();
-    return { status: 'manutencao_leve', cliente: '', obs };
+    return { status: 'manutencao_pesada', cliente: '', obs, prazo };
   }
-  return { status: 'locado', cliente: original, obs: '' };
+
+  if (textoSemPrazo.includes('manutencao') || textoSemPrazo.includes('leve')) {
+    const obs = semPrazo
+      .replace(/[Mm]anutencao\s*[Ll]eve/ig, '')
+      .replace(/[Mm]anutenção\s*[Ll]eve/ig, '')
+      .replace(/[Mm]anutencao/ig, '')
+      .replace(/[Mm]anutenção/ig, '')
+      .replace(/[Ll]eve/ig, '')
+      .replace(/^[\s\-–—]+/, '')
+      .trim();
+    return { status: 'manutencao_leve', cliente: '', obs, prazo };
+  }
+
+  return { status: 'locado', cliente: original, obs: '', prazo: '' };
 }
 
 function mapStatus(s) {
@@ -125,7 +168,7 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
     const painel = document.getElementById('painel');
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '' };
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: '' };
       const { classe, texto } = mapStatus(info.status);
       const kva = getKva(eq);
       const faixaId = getFaixaId(eq);
@@ -134,12 +177,21 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
       else if (info.status === 'locado') contLocado++;
       else contManutencao++;
 
+      // Classifica prazo para cor
+      const statusPrazo = classificarPrazo(info.prazo);
+      const classePrazo = statusPrazo === 'vencido' ? 'vencido'
+                        : statusPrazo === 'hoje'    ? 'hoje'
+                        : '';
+
       const card = document.createElement('div');
       card.className = `card ${classe}`;
       card.dataset.faixa = faixaId;
 
       card.innerHTML = `
-        <div class="card-titulo">${eq}</div>
+        <div class="card-header">
+          <div class="card-titulo">${eq}</div>
+          ${info.prazo ? `<div class="prazo ${classePrazo}">⏱️ ${info.prazo}</div>` : ''}
+        </div>
         <div class="card-kva">${isNaN(kva) ? '' : kva + ' kVA'}</div>
         <div class="status-linha ${classe}">
           <div class="led"></div>
