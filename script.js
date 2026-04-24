@@ -173,23 +173,25 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
 
-      // Monta HTML do prazo
+      // Monta HTML do prazo no canto superior direito
       let prazoHtml = '';
       if (info.prazo) {
         const cls = info.prazo.vencido ? 'prazo-vencido' : 'prazo-ok';
-        const icone = info.prazo.vencido ? '⚠️' : '📅';
-        prazoHtml = `<div class="prazo ${cls}">${icone} Prazo: ${info.prazo.texto}</div>`;
+        const icone = info.prazo.vencido ? '⚠️ ' : '';
+        prazoHtml = `<div class="prazo-topo ${cls}">${icone}${info.prazo.texto}</div>`;
       }
 
       card.innerHTML = `
-        <div class="card-titulo">${eq}</div>
+        <div class="card-header">
+          <div class="card-titulo">${eq}</div>
+          ${prazoHtml}
+        </div>
         <div class="status-linha">
           <div class="led"></div>
           <span>${textos[info.status]}</span>
         </div>
         ${info.cliente ? `<div class="cliente">👤 ${info.cliente}</div>` : ''}
         ${info.obs     ? `<div class="obs">🔧 ${info.obs}</div>` : ''}
-        ${prazoHtml}
       `;
       painel.appendChild(card);
     });
