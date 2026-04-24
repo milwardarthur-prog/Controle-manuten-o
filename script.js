@@ -177,8 +177,8 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
           <div class="led"></div>
           <span>${textos[info.status]}</span>
         </div>
-        ${info.cliente ? `<div class="cliente">👤 ${info.cliente}</div>` : ''}
-        ${info.obs     ? `<div class="obs">🔧 ${info.obs}</div>` : ''}
+        ${info.cliente ? `<div class="cliente">${info.cliente}</div>` : ''}
+        ${info.obs     ? `<div class="obs">${info.obs}</div>` : ''}
       `;
       painel.appendChild(card);
     });
