@@ -20,95 +20,68 @@ const TODOS_EQUIPAMENTOS = [
 
 const CSV_URL = 'dados.csv';
 
-// CONTADORES
 let contDisponivel = 0;
 let contManutencao = 0;
 let contLocado = 0;
 
-// CSV
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
   const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
-
   const dados = [];
-
   for (let i = 1; i < linhas.length; i++) {
     const colunas = linhas[i].split(',').map(c => c.trim());
     const obj = {};
-
-    cabecalho.forEach((col, idx) => {
-      obj[col] = colunas[idx] || '';
-    });
-
+    cabecalho.forEach((col, idx) => { obj[col] = colunas[idx] || ''; });
     dados.push(obj);
   }
-
   return dados;
 }
 
-// INTERPRETAÇÃO
 function interpretarLocal(localBruto) {
-  if (!localBruto) {
-    return { status: 'locado', cliente: '' };
-  }
-
-  const texto = localBruto.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '');
-
-  if (texto.includes('pesada')) {
-    return { status: 'manutencao_pesada', cliente: '' };
-  }
-
-  if (texto.includes('manutencao')) {
-    return { status: 'manutencao_leve', cliente: '' };
-  }
-
+  if (!localBruto) return { status: 'locado', cliente: '' };
+  const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (texto.includes('pesada')) return { status: 'manutencao_pesada', cliente: '' };
+  if (texto.includes('manutencao')) return { status: 'manutencao_leve', cliente: '' };
   return { status: 'locado', cliente: localBruto };
 }
 
-// MAPA STATUS
 function mapStatus(status) {
   switch (status) {
-    case 'locado':
-      return { classe: 'status-locado', texto: 'Locado' };
-    case 'manutencao_leve':
-      return { classe: 'status-manutencao_leve', texto: 'Manutenção leve' };
-    case 'manutencao_pesada':
-      return { classe: 'status-manutencao_pesada', texto: 'Manutenção pesada' };
-    default:
-      return { classe: 'status-disponivel', texto: 'Disponível' };
+    case 'locado':           return { classe: 'status-locado',           texto: 'Locado' };
+    case 'manutencao_leve':  return { classe: 'status-manutencao_leve',  texto: 'Manutenção Leve' };
+    case 'manutencao_pesada':return { classe: 'status-manutencao_pesada',texto: 'Manutenção Pesada' };
+    default:                 return { classe: 'status-disponivel',        texto: 'Disponível' };
   }
 }
 
-// CARD
 function criarCard(equipamento, status, cliente) {
   const painel = document.getElementById('painel');
   const { classe, texto } = mapStatus(status);
 
-  // CONTADORES
   if (status === 'disponivel') contDisponivel++;
   else if (status === 'locado') contLocado++;
   else contManutencao++;
 
   const card = document.createElement('div');
   card.className = `card ${classe}`;
-
   card.innerHTML = `
     <div class="card-titulo">${equipamento}</div>
     <div class="status-linha ${classe}">
       <div class="led"></div>
-      <span class="status-texto">${texto}</span>
+      <span>${texto}</span>
     </div>
     ${cliente ? `<div class="cliente">Cliente: ${cliente}</div>` : ''}
   `;
-
   painel.appendChild(card);
 }
 
-// LOAD
-fetch(CSV_URL)
-  .then(res => res.text())
+fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
+  .then(res => {
+    const lastMod = res.headers.get('Last-Modified');
+    const dataDisplay = lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + dataDisplay;
+    return res.text();
+  })
   .then(text => {
     const linhas = parseCSV(text);
     const mapa = {};
@@ -116,26 +89,23 @@ fetch(CSV_URL)
     linhas.forEach(linha => {
       const eq = (linha['equipamento'] || '').trim();
       const local = (linha['local'] || '').trim();
-
       if (!eq || !TODOS_EQUIPAMENTOS.includes(eq)) return;
-
       mapa[eq] = interpretarLocal(local);
     });
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq];
-
-      if (!info) {
-        criarCard(eq, 'disponivel', '');
-      } else {
-        criarCard(eq, info.status, info.cliente);
-      }
+      if (!info) criarCard(eq, 'disponivel', '');
+      else criarCard(eq, info.status, info.cliente);
     });
 
     // ATUALIZA CONTADORES
+    const total = contDisponivel + contManutencao + contLocado;
+    const taxaOcupacao = total > 0 ? ((contLocado / total) * 100).toFixed(1) : '0.0';
+
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
-    document.getElementById('cont-total').textContent =
-      contDisponivel + contManutencao + contLocado;
+    document.getElementById('cont-total').textContent = total;
+    document.getElementById('taxa-ocupacao').textContent = 'Ocupação: ' + taxaOcupacao + '%';
   });

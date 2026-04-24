@@ -13,7 +13,17 @@ h1 {
   font-size: 1.8rem;
 }
 
-/* ATUALIZAÇÃO DISCRETA */
+/* TAXA DE OCUPAÇÃO - TOPO ESQUERDO */
+.ocupacao-topo {
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  font-size: 0.85rem;
+  font-weight: bold;
+  color: #00aaff;
+}
+
+/* ATUALIZAÇÃO - TOPO DIREITO */
 .atualizacao-topo {
   position: absolute;
   top: 10px;
@@ -23,7 +33,7 @@ h1 {
   font-style: italic;
 }
 
-/* RESUMO (CONTADORES) */
+/* RESUMO */
 .resumo {
   display: flex;
   justify-content: center;
@@ -34,57 +44,27 @@ h1 {
 
 .resumo-card {
   background: #222;
-  padding: 8px;
+  padding: 8px 14px;
   border-radius: 8px;
-  cursor: pointer;
-  border: 2px solid transparent;
-  transition: 0.2s;
-  user-select: none;
-  text-align: center;
-  flex: 1 1 140px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
 }
 
-.resumo-card:hover { background: #333; border-color: #666; }
-.resumo-card.ativo { border-color: #fff; background: #333; font-weight: bold; }
-.resumo-card span  { font-weight: bold; font-size: 1.1rem; }
+.resumo-card span {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
 
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
 #cont-locado     { color: #00aaff; }
 #cont-total      { color: #ffffff; }
 
-/* FILTROS KVA */
-.filtros-kva {
-  display: flex;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  padding: 10px 5px;
-  gap: 10px;
-  margin-bottom: 20px;
-  -webkit-overflow-scrolling: touch;
-}
-.filtros-kva::-webkit-scrollbar { display: none; }
-
-.btn-kva {
-  background: #222;
-  color: #eee;
-  border: 2px solid #444;
-  padding: 8px 15px;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: 0.2s;
-  flex: 0 0 auto;
-}
-.btn-kva:hover { background: #333; border-color: #888; }
-.btn-kva.ativo { background: #444; border-color: #eee; font-weight: bold; }
-
-/* PAINEL / CARDS */
+/* PAINEL */
 .painel {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
 }
 
 .card {
@@ -94,55 +74,42 @@ h1 {
   box-shadow: 0 0 8px rgba(0,0,0,0.6);
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 5px;
-}
-
-.card-titulo { font-weight: bold; font-size: 1.05rem; }
-.card-kva    { font-size: 0.8rem; color: #888; }
-
-.prazo {
-  font-size: 0.8rem;
+.card-titulo {
   font-weight: bold;
-  color: #888;
+  font-size: 1.05rem;
 }
-.prazo.hoje { color: #ffdd00; }
-.prazo.vencido { color: #ff3333; }
 
-.status-linha { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
-.led { width: 12px; height: 12px; border-radius: 50%; }
+.status-linha {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
+.led {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+/* STATUS */
 .status-disponivel .led    { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
 .status-locado .led        { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
 .status-manutencao_leve .led  { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
 .status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 8px #ff3333; }
 
 .cliente {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: #bbb;
   border-top: 1px solid #333;
-  padding-top: 5px;
-  margin-top: 3px;
-}
-
-.obs {
-  font-size: 0.75rem;
-  color: #999;
-  margin-top: 1px;
-}
-
-@media (min-width: 768px) {
-  .filtros-kva { justify-content: center; flex-wrap: wrap; }
-  .painel { grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+  padding-top: 4px;
+  margin-top: 2px;
 }
 
 @media (max-width: 600px) {
-  .atualizacao-topo { position: static; text-align: center; margin-bottom: 5px; }
-  h1 { font-size: 1.5rem; margin-top: 0; }
+  .ocupacao-topo  { position: static; text-align: left; margin-bottom: 4px; }
+  .atualizacao-topo { position: static; text-align: right; margin-bottom: 4px; }
+  h1 { font-size: 1.4rem; margin-top: 0; }
 }
