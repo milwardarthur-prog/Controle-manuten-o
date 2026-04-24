@@ -23,7 +23,27 @@ const CSV_URL = 'dados.csv';
 let contDisponivel = 0;
 let contManutencao = 0;
 let contLocado = 0;
-let filtroAtivo = 'total';
+let filtroStatus = 'total';
+let filtroKva = 'todos';
+
+// Extrai a potência do nome do equipamento (ex: GE-64-55 => 55)
+function extrairKva(nome) {
+  const partes = nome.split('-');
+  const kva = parseInt(partes[partes.length - 1]);
+  return isNaN(kva) ? 0 : kva;
+}
+
+// Verifica se a potência se encaixa na faixa selecionada
+function dentroFaixaKva(kva, faixa) {
+  if (faixa === 'todos')   return true;
+  if (faixa === '10-39')   return kva >= 10  && kva <= 39;
+  if (faixa === '40-65')   return kva >= 40  && kva <= 65;
+  if (faixa === '70-90')   return kva >= 70  && kva <= 90;
+  if (faixa === '100-130') return kva >= 100 && kva <= 130;
+  if (faixa === '140-180') return kva >= 140 && kva <= 180;
+  if (faixa === '200plus') return kva >= 200;
+  return true;
+}
 
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
@@ -42,7 +62,7 @@ function interpretarLocal(localBruto) {
   if (!localBruto) return { status: 'locado', cliente: '' };
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   if (texto.includes('pesada')) return { status: 'manutencao_pesada', cliente: '' };
-  if (texto.includes('manutencao')) return { status: 'manutencao_leve', cliente: '' };
+  if (texto.includes('manutencao') || texto.includes('oficina')) return { status: 'manutencao_leve', cliente: '' };
   return { status: 'locado', cliente: localBruto };
 }
 
@@ -61,51 +81,39 @@ function corSemaforo(taxa) {
   return 'ocupacao-verde';
 }
 
-function aplicarFiltro(filtro) {
-  // Se clicar no mesmo botão ativo, volta para total
-  if (filtroAtivo === filtro && filtro !== 'total') filtro = 'total';
-  filtroAtivo = filtro;
+function aplicarFiltros() {
+  document.querySelectorAll('.card[data-status]').forEach(card => {
+    const status = card.getAttribute('data-status');
+    const kva    = parseInt(card.getAttribute('data-kva'));
 
-  // Atualiza visual dos botões
+    const passaStatus =
+      filtroStatus === 'total' ||
+      (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) ||
+      status === filtroStatus;
+
+    const passaKva = dentroFaixaKva(kva, filtroKva);
+
+    card.classList.toggle('card-oculto', !(passaStatus && passaKva));
+  });
+}
+
+function aplicarFiltroStatus(filtro) {
+  if (filtroStatus === filtro && filtro !== 'total') filtro = 'total';
+  filtroStatus = filtro;
+
   document.querySelectorAll('.btn-filtro').forEach(btn => {
     btn.classList.remove('ativo-total','ativo-disponivel','ativo-manutencao','ativo-locado');
   });
   document.getElementById('btn-' + filtro).classList.add('ativo-' + filtro);
 
-  // Filtra os cards
-  document.querySelectorAll('.card[data-status]').forEach(card => {
-    const status = card.getAttribute('data-status');
-    if (filtro === 'total') {
-      card.classList.remove('card-oculto');
-    } else if (filtro === 'manutencao') {
-      const visivel = status === 'manutencao_leve' || status === 'manutencao_pesada';
-      card.classList.toggle('card-oculto', !visivel);
-    } else {
-      card.classList.toggle('card-oculto', status !== filtro);
-    }
-  });
+  aplicarFiltros();
 }
 
-function criarCard(equipamento, status, cliente) {
-  const painel = document.getElementById('painel');
-  const { classe, texto } = mapStatus(status);
-
-  if (status === 'disponivel') contDisponivel++;
-  else if (status === 'locado') contLocado++;
-  else contManutencao++;
-
-  const card = document.createElement('div');
-  card.className = `card ${classe}`;
-  card.setAttribute('data-status', status);
-  card.innerHTML = `
-    <div class="card-titulo">${equipamento}</div>
-    <div class="status-linha ${classe}">
-      <div class="led"></div>
-      <span class="status-texto">${texto}</span>
-    </div>
-    ${cliente ? `<div class="cliente">Cliente: ${cliente}</div>` : ''}
-  `;
-  painel.appendChild(card);
+function aplicarFiltroKva(faixa, btn) {
+  filtroKva = faixa;
+  document.querySelectorAll('.btn-kva').forEach(b => b.classList.remove('ativo'));
+  btn.classList.add('ativo');
+  aplicarFiltros();
 }
 
 fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
@@ -128,14 +136,34 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
       mapa[eq] = interpretarLocal(local);
     });
 
+    const painel = document.getElementById('painel');
+
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq];
-      if (!info) criarCard(eq, 'disponivel', '');
-      else criarCard(eq, info.status, info.cliente);
+      const info = mapa[eq] || { status: 'disponivel', cliente: '' };
+      const { classe, texto } = mapStatus(info.status);
+      const kva = extrairKva(eq);
+
+      if (info.status === 'disponivel') contDisponivel++;
+      else if (info.status === 'locado') contLocado++;
+      else contManutencao++;
+
+      const card = document.createElement('div');
+      card.className = `card ${classe}`;
+      card.setAttribute('data-status', info.status);
+      card.setAttribute('data-kva', kva);
+      card.innerHTML = `
+        <div class="card-titulo">${eq}</div>
+        <div class="status-linha ${classe}">
+          <div class="led"></div>
+          <span>${texto}</span>
+        </div>
+        ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
+      `;
+      painel.appendChild(card);
     });
 
     const total = contDisponivel + contManutencao + contLocado;
-    const taxaOcupacao = total > 0 ? parseFloat(((contLocado / total) * 100).toFixed(1)) : 0;
+    const taxaOcupacao = total > 0 ? (contLocado / total * 100) : 0;
 
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;

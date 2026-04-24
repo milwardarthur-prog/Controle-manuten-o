@@ -13,7 +13,6 @@ h1 {
   font-size: 1.8rem;
 }
 
-/* CARD TAXA DE OCUPAÇÃO - TOPO ESQUERDO */
 .card-ocupacao {
   position: absolute;
   top: 16px;
@@ -30,12 +29,10 @@ h1 {
   margin-top: 6px;
 }
 
-/* CORES SEMÁFORO */
 .ocupacao-vermelho { color: #ff3333; }
 .ocupacao-amarelo  { color: #ffdd00; }
 .ocupacao-verde    { color: #00ff66; }
 
-/* ATUALIZAÇÃO - TOPO DIREITO */
 .atualizacao-topo {
   position: absolute;
   top: 10px;
@@ -45,12 +42,12 @@ h1 {
   font-style: italic;
 }
 
-/* BOTÕES DE FILTRO */
+/* BOTÕES DE STATUS */
 .resumo {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -66,16 +63,8 @@ h1 {
   transition: border 0.2s, background 0.2s;
 }
 
-.btn-filtro:hover {
-  background: #2e2e2e;
-}
+.btn-filtro:hover { background: #2e2e2e; }
 
-.btn-filtro span {
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-/* BOTÃO ATIVO */
 .btn-filtro.ativo-total       { border-color: #ffffff; background: #333; }
 .btn-filtro.ativo-disponivel  { border-color: #00ff66; background: #1a2e1f; }
 .btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
@@ -86,6 +75,35 @@ h1 {
 #cont-locado     { color: #00aaff; }
 #cont-total      { color: #ffffff; }
 
+/* BOTÕES DE POTÊNCIA */
+.filtros-kva {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.btn-kva {
+  background: #1a1a1a;
+  border: 2px solid #444;
+  color: #ccc;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border 0.2s, background 0.2s, color 0.2s;
+}
+
+.btn-kva:hover { background: #2a2a2a; border-color: #888; }
+
+.btn-kva.ativo {
+  background: #2a2a00;
+  border-color: #ffdd00;
+  color: #ffdd00;
+  font-weight: bold;
+}
+
 /* PAINEL */
 .painel {
   display: grid;
@@ -93,7 +111,6 @@ h1 {
   gap: 14px;
 }
 
-/* CARD BASE */
 .card {
   background: #222;
   border-radius: 8px;
@@ -104,10 +121,7 @@ h1 {
   gap: 6px;
 }
 
-.card-titulo {
-  font-weight: bold;
-  font-size: 1.05rem;
-}
+.card-titulo { font-weight: bold; font-size: 1.05rem; }
 
 .status-linha {
   display: flex;
@@ -121,7 +135,6 @@ h1 {
   border-radius: 50%;
 }
 
-/* STATUS */
 .status-disponivel .led      { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
 .status-locado .led          { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
 .status-manutencao_leve .led   { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
@@ -135,10 +148,7 @@ h1 {
   margin-top: 2px;
 }
 
-/* CARD OCULTO PELO FILTRO */
-.card-oculto {
-  display: none;
-}
+.card-oculto { display: none; }
 
 @media (max-width: 600px) {
   .card-ocupacao    { position: static; width: auto; margin-bottom: 10px; }

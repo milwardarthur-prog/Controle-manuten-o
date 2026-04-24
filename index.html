@@ -8,23 +8,32 @@
 </head>
 <body>
 
-  <!-- CARD TAXA DE OCUPAÇÃO - TOPO ESQUERDO -->
-  <div class="card card-ocupacao" id="card-ocupacao">
+  <div class="card-ocupacao" id="card-ocupacao">
     <div class="card-titulo">Taxa de Ocupação</div>
     <div class="ocupacao-valor" id="taxa-ocupacao">--%</div>
   </div>
 
-  <!-- DATA DE ATUALIZAÇÃO - TOPO DIREITO -->
   <div class="atualizacao-topo" id="info-atualizacao">Carregando dados...</div>
 
   <h1>Painel de Equipamentos</h1>
 
-  <!-- BOTÕES DE FILTRO -->
+  <!-- BOTÕES DE STATUS -->
   <div class="resumo">
-    <button class="btn-filtro" id="btn-total"      onclick="aplicarFiltro('total')">⚪ Total: <span id="cont-total">0</span></button>
-    <button class="btn-filtro" id="btn-disponivel" onclick="aplicarFiltro('disponivel')">🟢 Disponíveis: <span id="cont-disponivel">0</span></button>
-    <button class="btn-filtro" id="btn-manutencao" onclick="aplicarFiltro('manutencao')">🔴 Manutenção: <span id="cont-manutencao">0</span></button>
-    <button class="btn-filtro" id="btn-locado"     onclick="aplicarFiltro('locado')">🔵 Locados: <span id="cont-locado">0</span></button>
+    <button class="btn-filtro" id="btn-total"      onclick="aplicarFiltroStatus('total')">⚪ Total: <span id="cont-total">0</span></button>
+    <button class="btn-filtro" id="btn-disponivel" onclick="aplicarFiltroStatus('disponivel')">🟢 Disponíveis: <span id="cont-disponivel">0</span></button>
+    <button class="btn-filtro" id="btn-manutencao" onclick="aplicarFiltroStatus('manutencao')">🔴 Manutenção: <span id="cont-manutencao">0</span></button>
+    <button class="btn-filtro" id="btn-locado"     onclick="aplicarFiltroStatus('locado')">🔵 Locados: <span id="cont-locado">0</span></button>
+  </div>
+
+  <!-- BOTÕES DE POTÊNCIA -->
+  <div class="filtros-kva">
+    <button class="btn-kva ativo" id="kva-todos"    onclick="aplicarFiltroKva('todos',    this)">Todos</button>
+    <button class="btn-kva"       id="kva-10-39"    onclick="aplicarFiltroKva('10-39',    this)">10 – 39 kVA</button>
+    <button class="btn-kva"       id="kva-40-65"    onclick="aplicarFiltroKva('40-65',    this)">40 – 65 kVA</button>
+    <button class="btn-kva"       id="kva-70-90"    onclick="aplicarFiltroKva('70-90',    this)">70 – 90 kVA</button>
+    <button class="btn-kva"       id="kva-100-130"  onclick="aplicarFiltroKva('100-130',  this)">100 – 130 kVA</button>
+    <button class="btn-kva"       id="kva-140-180"  onclick="aplicarFiltroKva('140-180',  this)">140 – 180 kVA</button>
+    <button class="btn-kva"       id="kva-200plus"  onclick="aplicarFiltroKva('200plus',  this)">200+ kVA</button>
   </div>
 
   <div id="painel" class="painel"></div>
