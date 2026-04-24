@@ -60,22 +60,16 @@ function parseCSV(text) {
   });
 }
 
-// Compara prazo (dd/mm) com hoje
-// Retorna: 'vencido', 'hoje' ou 'ok'
 function classificarPrazo(prazoStr) {
   if (!prazoStr) return 'ok';
-
   const partes = prazoStr.trim().split('/');
   if (partes.length < 2) return 'ok';
-
   const hoje = new Date();
   const dia  = parseInt(partes[0]);
-  const mes  = parseInt(partes[1]) - 1; // mês base 0
+  const mes  = parseInt(partes[1]) - 1; 
   const ano  = partes[2] ? parseInt(partes[2]) : hoje.getFullYear();
-
   const dataPrazo = new Date(ano, mes, dia);
   const dataHoje  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-
   if (dataPrazo < dataHoje) return 'vencido';
   if (dataPrazo.getTime() === dataHoje.getTime()) return 'hoje';
   return 'ok';
@@ -83,11 +77,7 @@ function classificarPrazo(prazoStr) {
 
 function interpretarLocal(localBruto) {
   if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: '' };
-
   const original = localBruto.trim();
-  const texto = original.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  // Extrai prazo se existir (formato: | Prazo: dd/mm ou | Prazo: dd/mm/aaaa)
   let prazo = '';
   let semPrazo = original;
 
@@ -100,42 +90,26 @@ function interpretarLocal(localBruto) {
   const textoSemPrazo = semPrazo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   if (textoSemPrazo.includes('pesada')) {
-    const obs = semPrazo
-      .replace(/[Mm]anutencao\s*[Pp]esada/ig, '')
-      .replace(/[Mm]anutenção\s*[Pp]esada/ig, '')
-      .replace(/^[\s\-–—]+/, '')
-      .trim();
+    const obs = semPrazo.replace(/[Mm]anutencao\s*[Pp]esada/ig, '').replace(/[Mm]anutenção\s*[Pp]esada/ig, '').replace(/^[\s\-–—]+/, '').trim();
     return { status: 'manutencao_pesada', cliente: '', obs, prazo };
   }
-
   if (textoSemPrazo.includes('manutencao') || textoSemPrazo.includes('leve')) {
-    const obs = semPrazo
-      .replace(/[Mm]anutencao\s*[Ll]eve/ig, '')
-      .replace(/[Mm]anutenção\s*[Ll]eve/ig, '')
-      .replace(/[Mm]anutencao/ig, '')
-      .replace(/[Mm]anutenção/ig, '')
-      .replace(/[Ll]eve/ig, '')
-      .replace(/^[\s\-–—]+/, '')
-      .trim();
+    const obs = semPrazo.replace(/[Mm]anutencao\s*[Ll]eve/ig, '').replace(/[Mm]anutenção\s*[Ll]eve/ig, '').replace(/[Mm]anutencao/ig, '').replace(/[Mm]anutenção/ig, '').replace(/[Ll]eve/ig, '').replace(/^[\s\-–—]+/, '').trim();
     return { status: 'manutencao_leve', cliente: '', obs, prazo };
   }
-
   return { status: 'locado', cliente: original, obs: '', prazo: '' };
 }
 
 function mapStatus(s) {
-  if (s === 'locado')            return { classe: 'status-locado',            texto: 'Locado' };
-  if (s === 'manutencao_leve')   return { classe: 'status-manutencao_leve',   texto: 'Manutenção Leve' };
+  if (s === 'locado') return { classe: 'status-locado', texto: 'Locado' };
+  if (s === 'manutencao_leve') return { classe: 'status-manutencao_leve', texto: 'Manutenção Leve' };
   if (s === 'manutencao_pesada') return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
   return { classe: 'status-disponivel', texto: 'Disponível' };
 }
 
 function aplicarFiltros() {
   document.querySelectorAll('.card').forEach(card => {
-    const statusOk = filtroStatusAtivo === 'todos'
-      || (filtroStatusAtivo === 'manutencao'
-          ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada')
-          : card.classList.contains(`status-${filtroStatusAtivo}`));
+    const statusOk = filtroStatusAtivo === 'todos' || (filtroStatusAtivo === 'manutencao' ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada') : card.classList.contains(`status-${filtroStatusAtivo}`));
     const kvaOk = filtroKvaAtivo === 'todos' || card.dataset.faixa === filtroKvaAtivo;
     card.style.display = (statusOk && kvaOk) ? '' : 'none';
   });
@@ -155,8 +129,15 @@ function filtrarKva(faixa, elemento) {
   aplicarFiltros();
 }
 
+// Busca a data da última modificação do arquivo no servidor
 fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
-  .then(res => res.text())
+  .then(res => {
+    // Tenta pegar a data de modificação real do cabeçalho
+    const lastMod = res.headers.get('Last-Modified');
+    const dataDisplay = lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + dataDisplay;
+    return res.text();
+  })
   .then(text => {
     const dados = parseCSV(text);
     const mapa = {};
@@ -177,11 +158,8 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
       else if (info.status === 'locado') contLocado++;
       else contManutencao++;
 
-      // Classifica prazo para cor
       const statusPrazo = classificarPrazo(info.prazo);
-      const classePrazo = statusPrazo === 'vencido' ? 'vencido'
-                        : statusPrazo === 'hoje'    ? 'hoje'
-                        : '';
+      const classePrazo = statusPrazo === 'vencido' ? 'vencido' : statusPrazo === 'hoje' ? 'hoje' : '';
 
       const card = document.createElement('div');
       card.className = `card ${classe}`;
@@ -200,7 +178,6 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
         ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
         ${info.obs ? `<div class="obs">📋 ${info.obs}</div>` : ''}
       `;
-
       painel.appendChild(card);
     });
 
