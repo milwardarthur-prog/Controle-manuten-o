@@ -1,5 +1,5 @@
 const TODOS_EQUIPAMENTOS = [
-  "GE-01-02","GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-07-06","GE-08-06","GE-09-170","GE-10-25",
+  "GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-09-170","GE-10-25",
   "GE-11-75","GE-12-75","GE-13-500","GE-14-140","GE-15-170","GE-16-40","GE-17-81",
   "GE-18-100","GE-19-81","GE-20-54","GE-21-54","GE-22-54","GE-23-54","GE-24-54",
   "GE-25-60","GE-26-75","GE-27-180","GE-28-81","GE-29-85","GE-30-105","GE-31-105",
@@ -47,11 +47,17 @@ function interpretarLocal(localBruto) {
 
 function mapStatus(status) {
   switch (status) {
-    case 'locado':           return { classe: 'status-locado',           texto: 'Locado' };
-    case 'manutencao_leve':  return { classe: 'status-manutencao_leve',  texto: 'Manutenção Leve' };
-    case 'manutencao_pesada':return { classe: 'status-manutencao_pesada',texto: 'Manutenção Pesada' };
-    default:                 return { classe: 'status-disponivel',        texto: 'Disponível' };
+    case 'locado':            return { classe: 'status-locado',            texto: 'Locado' };
+    case 'manutencao_leve':   return { classe: 'status-manutencao_leve',   texto: 'Manutenção Leve' };
+    case 'manutencao_pesada': return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
+    default:                  return { classe: 'status-disponivel',         texto: 'Disponível' };
   }
+}
+
+function corSemaforo(taxa) {
+  if (taxa <= 40) return 'ocupacao-vermelho';
+  if (taxa <= 70) return 'ocupacao-amarelo';
+  return 'ocupacao-verde';
 }
 
 function criarCard(equipamento, status, cliente) {
@@ -68,7 +74,7 @@ function criarCard(equipamento, status, cliente) {
     <div class="card-titulo">${equipamento}</div>
     <div class="status-linha ${classe}">
       <div class="led"></div>
-      <span>${texto}</span>
+      <span class="status-texto">${texto}</span>
     </div>
     ${cliente ? `<div class="cliente">Cliente: ${cliente}</div>` : ''}
   `;
@@ -78,7 +84,9 @@ function criarCard(equipamento, status, cliente) {
 fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
   .then(res => {
     const lastMod = res.headers.get('Last-Modified');
-    const dataDisplay = lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
+    const dataDisplay = lastMod
+      ? new Date(lastMod).toLocaleString('pt-BR')
+      : new Date().toLocaleString('pt-BR');
     document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + dataDisplay;
     return res.text();
   })
@@ -101,11 +109,15 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
 
     // ATUALIZA CONTADORES
     const total = contDisponivel + contManutencao + contLocado;
-    const taxaOcupacao = total > 0 ? ((contLocado / total) * 100).toFixed(1) : '0.0';
+    const taxaOcupacao = total > 0 ? parseFloat(((contLocado / total) * 100).toFixed(1)) : 0;
 
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
     document.getElementById('cont-total').textContent = total;
-    document.getElementById('taxa-ocupacao').textContent = 'Ocupação: ' + taxaOcupacao + '%';
+
+    // ATUALIZA CARD TAXA DE OCUPAÇÃO COM SEMÁFORO
+    const valorEl = document.getElementById('taxa-ocupacao');
+    valorEl.textContent = taxaOcupacao.toFixed(1) + '%';
+    valorEl.className = 'ocupacao-valor ' + corSemaforo(taxaOcupacao);
   });

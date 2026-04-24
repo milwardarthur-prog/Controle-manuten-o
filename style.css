@@ -13,15 +13,27 @@ h1 {
   font-size: 1.8rem;
 }
 
-/* TAXA DE OCUPAÇÃO - TOPO ESQUERDO */
-.ocupacao-topo {
+/* CARD TAXA DE OCUPAÇÃO - TOPO ESQUERDO */
+.card-ocupacao {
   position: absolute;
-  top: 10px;
+  top: 16px;
   left: 20px;
-  font-size: 0.85rem;
-  font-weight: bold;
-  color: #00aaff;
+  width: 140px;
+  text-align: center;
+  padding: 10px 14px;
+  z-index: 10;
 }
+
+.ocupacao-valor {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+/* CORES SEMÁFORO */
+.ocupacao-vermelho { color: #ff3333; }
+.ocupacao-amarelo  { color: #ffdd00; }
+.ocupacao-verde    { color: #00ff66; }
 
 /* ATUALIZAÇÃO - TOPO DIREITO */
 .atualizacao-topo {
@@ -67,6 +79,7 @@ h1 {
   gap: 14px;
 }
 
+/* CARD BASE */
 .card {
   background: #222;
   border-radius: 8px;
@@ -95,8 +108,8 @@ h1 {
 }
 
 /* STATUS */
-.status-disponivel .led    { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
-.status-locado .led        { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
+.status-disponivel .led     { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+.status-locado .led         { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
 .status-manutencao_leve .led  { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
 .status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 8px #ff3333; }
 
@@ -109,7 +122,7 @@ h1 {
 }
 
 @media (max-width: 600px) {
-  .ocupacao-topo  { position: static; text-align: left; margin-bottom: 4px; }
+  .card-ocupacao    { position: static; width: auto; margin-bottom: 10px; }
   .atualizacao-topo { position: static; text-align: right; margin-bottom: 4px; }
   h1 { font-size: 1.4rem; margin-top: 0; }
 }
