@@ -65,7 +65,7 @@ h1 {
 }
 
 .btn-filtro:hover { background: #2e2e2e; }
-.btn-filtro.ativo-total       { border-color: #ffffff; background: #333; }
+.btn-filtro.ativo-total       { border-color: #ffff; background: #333; }
 .btn-filtro.ativo-disponivel  { border-color: #00ff66; background: #1a2e1f; }
 .btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
 .btn-filtro.ativo-locado      { border-color: #00aaff; background: #1a2535; }
@@ -73,7 +73,7 @@ h1 {
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
 #cont-locado     { color: #00aaff; }
-#cont-total      { color: #ffffff; }
+#cont-total      { color: #ffff; }
 
 .filtros-kva {
   display: flex;
