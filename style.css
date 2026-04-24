@@ -45,7 +45,7 @@ h1 {
   font-style: italic;
 }
 
-/* RESUMO */
+/* BOTÕES DE FILTRO */
 .resumo {
   display: flex;
   justify-content: center;
@@ -54,18 +54,32 @@ h1 {
   flex-wrap: wrap;
 }
 
-.resumo-card {
+.btn-filtro {
   background: #222;
-  padding: 8px 14px;
+  border: 2px solid transparent;
+  color: #eee;
+  padding: 8px 16px;
   border-radius: 8px;
   font-size: 0.9rem;
+  cursor: pointer;
   box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  transition: border 0.2s, background 0.2s;
 }
 
-.resumo-card span {
+.btn-filtro:hover {
+  background: #2e2e2e;
+}
+
+.btn-filtro span {
   font-weight: bold;
   font-size: 1.1rem;
 }
+
+/* BOTÃO ATIVO */
+.btn-filtro.ativo-total       { border-color: #ffffff; background: #333; }
+.btn-filtro.ativo-disponivel  { border-color: #00ff66; background: #1a2e1f; }
+.btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
+.btn-filtro.ativo-locado      { border-color: #00aaff; background: #1a2535; }
 
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
@@ -108,9 +122,9 @@ h1 {
 }
 
 /* STATUS */
-.status-disponivel .led     { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
-.status-locado .led         { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
-.status-manutencao_leve .led  { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
+.status-disponivel .led      { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+.status-locado .led          { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
+.status-manutencao_leve .led   { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
 .status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 8px #ff3333; }
 
 .cliente {
@@ -119,6 +133,11 @@ h1 {
   border-top: 1px solid #333;
   padding-top: 4px;
   margin-top: 2px;
+}
+
+/* CARD OCULTO PELO FILTRO */
+.card-oculto {
+  display: none;
 }
 
 @media (max-width: 600px) {

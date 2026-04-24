@@ -23,6 +23,7 @@ const CSV_URL = 'dados.csv';
 let contDisponivel = 0;
 let contManutencao = 0;
 let contLocado = 0;
+let filtroAtivo = 'total';
 
 function parseCSV(text) {
   const linhas = text.trim().split('\n');
@@ -60,6 +61,31 @@ function corSemaforo(taxa) {
   return 'ocupacao-verde';
 }
 
+function aplicarFiltro(filtro) {
+  // Se clicar no mesmo botão ativo, volta para total
+  if (filtroAtivo === filtro && filtro !== 'total') filtro = 'total';
+  filtroAtivo = filtro;
+
+  // Atualiza visual dos botões
+  document.querySelectorAll('.btn-filtro').forEach(btn => {
+    btn.classList.remove('ativo-total','ativo-disponivel','ativo-manutencao','ativo-locado');
+  });
+  document.getElementById('btn-' + filtro).classList.add('ativo-' + filtro);
+
+  // Filtra os cards
+  document.querySelectorAll('.card[data-status]').forEach(card => {
+    const status = card.getAttribute('data-status');
+    if (filtro === 'total') {
+      card.classList.remove('card-oculto');
+    } else if (filtro === 'manutencao') {
+      const visivel = status === 'manutencao_leve' || status === 'manutencao_pesada';
+      card.classList.toggle('card-oculto', !visivel);
+    } else {
+      card.classList.toggle('card-oculto', status !== filtro);
+    }
+  });
+}
+
 function criarCard(equipamento, status, cliente) {
   const painel = document.getElementById('painel');
   const { classe, texto } = mapStatus(status);
@@ -70,6 +96,7 @@ function criarCard(equipamento, status, cliente) {
 
   const card = document.createElement('div');
   card.className = `card ${classe}`;
+  card.setAttribute('data-status', status);
   card.innerHTML = `
     <div class="card-titulo">${equipamento}</div>
     <div class="status-linha ${classe}">
@@ -118,4 +145,7 @@ fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
     const valorEl = document.getElementById('taxa-ocupacao');
     valorEl.textContent = taxaOcupacao.toFixed(1) + '%';
     valorEl.className = 'ocupacao-valor ' + corSemaforo(taxaOcupacao);
+
+    // Ativa botão Total por padrão
+    document.getElementById('btn-total').classList.add('ativo-total');
   });

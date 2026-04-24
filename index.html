@@ -19,11 +19,12 @@
 
   <h1>Painel de Equipamentos</h1>
 
+  <!-- BOTÕES DE FILTRO -->
   <div class="resumo">
-    <div class="resumo-card">🟢 Disponíveis: <span id="cont-disponivel">0</span></div>
-    <div class="resumo-card">🔴 Manutenção: <span id="cont-manutencao">0</span></div>
-    <div class="resumo-card">🔵 Locados: <span id="cont-locado">0</span></div>
-    <div class="resumo-card">⚪ Total: <span id="cont-total">0</span></div>
+    <button class="btn-filtro" id="btn-total"      onclick="aplicarFiltro('total')">⚪ Total: <span id="cont-total">0</span></button>
+    <button class="btn-filtro" id="btn-disponivel" onclick="aplicarFiltro('disponivel')">🟢 Disponíveis: <span id="cont-disponivel">0</span></button>
+    <button class="btn-filtro" id="btn-manutencao" onclick="aplicarFiltro('manutencao')">🔴 Manutenção: <span id="cont-manutencao">0</span></button>
+    <button class="btn-filtro" id="btn-locado"     onclick="aplicarFiltro('locado')">🔵 Locados: <span id="cont-locado">0</span></button>
   </div>
 
   <div id="painel" class="painel"></div>
