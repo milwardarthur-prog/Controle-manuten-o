@@ -134,11 +134,16 @@ h1 {
   text-align: right;
 }
 
+/* Semáforo de datas */
+.prazo-futuro   { color: #ffffff; }
+.prazo-hoje     { color: #ffdd00; }
+.prazo-atrasado { color: #ff3333; }
+
 .status-linha { display: flex; align-items: center; gap: 8px; }
 .led { width: 12px; height: 12px; border-radius: 50%; }
 
-.status-disponivel .led      { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
-.status-locado .led          { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
+.status-disponivel .led        { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+.status-locado .led            { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
 .status-manutencao_leve .led   { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
 .status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 8px #ff3333; }
 
@@ -157,15 +162,6 @@ h1 {
   padding-top: 4px;
   margin-top: 2px;
 }
-
-.prazo {
-  font-size: 0.82rem;
-  font-weight: bold;
-  padding-top: 2px;
-}
-
-.prazo-ok      { color: #ffdd00; }
-.prazo-vencido { color: #ff3333; }
 
 .card-oculto { display: none; }
 

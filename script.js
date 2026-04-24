@@ -51,7 +51,14 @@ function interpretarPrazo(prazoStr) {
   const dataPrazo = new Date(ano, mes, dia);
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  return { texto: prazoStr, vencido: dataPrazo < hoje };
+  dataPrazo.setHours(0, 0, 0, 0);
+
+  let cor;
+  if (dataPrazo > hoje)                              cor = 'prazo-futuro';
+  else if (dataPrazo.getTime() === hoje.getTime())   cor = 'prazo-hoje';
+  else                                               cor = 'prazo-atrasado';
+
+  return { texto: prazoStr, cor };
 }
 
 function interpretarLocal(localBruto) {
@@ -163,9 +170,7 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
 
       let prazoHtml = '';
       if (info.prazo) {
-        const cls = info.prazo.vencido ? 'prazo-vencido' : 'prazo-ok';
-        const icone = info.prazo.vencido ? '⚠️ ' : '';
-        prazoHtml = `<div class="prazo-topo ${cls}">${icone}${info.prazo.texto}</div>`;
+        prazoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
       }
 
       card.innerHTML = `
