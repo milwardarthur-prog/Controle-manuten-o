@@ -70,6 +70,11 @@ h1 {
 .btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
 .btn-filtro.ativo-locado      { border-color: #00aaff; background: #1a2535; }
 
+#cont-disponivel { color: #00ff66; }
+#cont-manutencao { color: #ff3333; }
+#cont-locado     { color: #00aaff; }
+#cont-total      { color: #ffffff; }
+
 .filtros-kva {
   display: flex;
   justify-content: center;
@@ -128,6 +133,24 @@ h1 {
   padding-top: 4px;
   margin-top: 2px;
 }
+
+/* DESCRIÇÃO E PRAZO DE MANUTENÇÃO */
+.obs {
+  font-size: 0.82rem;
+  color: #ccc;
+  border-top: 1px solid #333;
+  padding-top: 4px;
+  margin-top: 2px;
+}
+
+.prazo {
+  font-size: 0.82rem;
+  font-weight: bold;
+  padding-top: 2px;
+}
+
+.prazo-ok      { color: #ffdd00; }
+.prazo-vencido { color: #ff3333; }
 
 .card-oculto { display: none; }
 

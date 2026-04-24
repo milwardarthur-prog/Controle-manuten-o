@@ -37,10 +37,64 @@ function dentroFaixaKva(kva, faixa) {
   if (faixa === '170-190') return kva >= 170 && kva <= 190;
   if (faixa === '200-290') return kva >= 200 && kva <= 290;
   if (faixa === '300-600') return kva >= 300 && kva <= 600;
-  if (faixa === 'outros') {
-     return !(kva >= 10 && kva <= 600);
-  }
+  if (faixa === 'outros')  return !(kva >= 10 && kva <= 600);
   return true;
+}
+
+// Interpreta prazo no formato dd/mm ou dd/mm/aaaa e verifica se venceu
+function interpretarPrazo(prazoStr) {
+  if (!prazoStr) return null;
+  prazoStr = prazoStr.trim();
+  const partes = prazoStr.split('/');
+  const dia = parseInt(partes[0]);
+  const mes = parseInt(partes[1]) - 1;
+  const ano = partes[2] ? parseInt(partes[2]) : new Date().getFullYear();
+  const dataPrazo = new Date(ano, mes, dia);
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  return {
+    texto: prazoStr,
+    vencido: dataPrazo < hoje
+  };
+}
+
+// Interpreta o campo "local" do CSV
+// Formato esperado para manutenção:
+//   "Manutencao leve - Descrição aqui | Prazo: 30/04"
+//   "Manutencao pesada - Descrição aqui | Prazo: 30/04"
+function interpretarLocal(localBruto) {
+  if (!localBruto) return { status: 'locado', cliente: '', obs: '', prazo: null };
+
+  const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  let status = 'locado';
+  if (texto.includes('pesada')) status = 'manutencao_pesada';
+  else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
+
+  if (status === 'locado') {
+    return { status, cliente: localBruto, obs: '', prazo: null };
+  }
+
+  // Extrai descrição e prazo
+  let obs = '';
+  let prazo = null;
+
+  // Separa pelo " | Prazo: "
+  const partePrazo = localBruto.split(/\|/);
+  let descricaoParte = partePrazo[0] || '';
+  let prazoParte = partePrazo[1] || '';
+
+  // Remove prefixo "Manutencao leve - " ou "Manutencao pesada - "
+  descricaoParte = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
+  obs = descricaoParte;
+
+  // Extrai data do prazo
+  const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
+  if (matchPrazo) {
+    prazo = interpretarPrazo(matchPrazo[1]);
+  }
+
+  return { status, cliente: '', obs, prazo };
 }
 
 function aplicarFiltros() {
@@ -75,37 +129,40 @@ function aplicarFiltroKva(faixa, btn) {
   aplicarFiltros();
 }
 
-function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'locado', cliente: '' };
-  const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (texto.includes('pesada')) return { status: 'manutencao_pesada', cliente: '' };
-  if (texto.includes('manutencao') || texto.includes('oficina')) return { status: 'manutencao_leve', cliente: '' };
-  return { status: 'locado', cliente: localBruto };
-}
-
 fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
   .then(res => {
     const lastMod = res.headers.get('Last-Modified');
-    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' +
+      (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
     return res.text();
   })
   .then(text => {
     const linhas = text.trim().split('\n');
+    const cabecalho = linhas[0].split(',').map(c => c.trim().toLowerCase());
     const mapa = {};
+
     for (let i = 1; i < linhas.length; i++) {
-        const caps = linhas[0].split(',').map(c => c.trim().toLowerCase());
-        const cols = linhas[i].split(',').map(c => c.trim());
-        const eq = cols[caps.indexOf('equipamento')];
-        const loc = cols[caps.indexOf('local')];
-        if (eq) mapa[eq] = interpretarLocal(loc);
+      const cols = linhas[i].split(',').map(c => c.trim());
+      const eq  = cols[cabecalho.indexOf('equipamento')] || '';
+      const loc = cols[cabecalho.indexOf('local')] || '';
+      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
+        mapa[eq] = interpretarLocal(loc);
+      }
     }
 
     const painel = document.getElementById('painel');
     let cDisp = 0, cMan = 0, cLoc = 0;
 
+    const textos = {
+      'disponivel':        'Disponível',
+      'locado':            'Locado',
+      'manutencao_leve':   'Manutenção Leve',
+      'manutencao_pesada': 'Manutenção Pesada'
+    };
+
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '' };
-      const kva = extrairKva(eq);
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null };
+      const kva  = extrairKva(eq);
 
       if (info.status === 'disponivel') cDisp++;
       else if (info.status === 'locado') cLoc++;
@@ -116,12 +173,13 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
 
-      const textos = {
-        'disponivel': 'Disponível',
-        'locado': 'Locado',
-        'manutencao_leve': 'Manutenção Leve',
-        'manutencao_pesada': 'Manutenção Pesada'
-      };
+      // Monta HTML do prazo
+      let prazoHtml = '';
+      if (info.prazo) {
+        const cls = info.prazo.vencido ? 'prazo-vencido' : 'prazo-ok';
+        const icone = info.prazo.vencido ? '⚠️' : '📅';
+        prazoHtml = `<div class="prazo ${cls}">${icone} Prazo: ${info.prazo.texto}</div>`;
+      }
 
       card.innerHTML = `
         <div class="card-titulo">${eq}</div>
@@ -129,7 +187,9 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
           <div class="led"></div>
           <span>${textos[info.status]}</span>
         </div>
-        ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
+        ${info.cliente ? `<div class="cliente">👤 ${info.cliente}</div>` : ''}
+        ${info.obs     ? `<div class="obs">🔧 ${info.obs}</div>` : ''}
+        ${prazoHtml}
       `;
       painel.appendChild(card);
     });
@@ -144,5 +204,6 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const taxaEl = document.getElementById('taxa-ocupacao');
     taxaEl.textContent = taxa.toFixed(1) + '%';
     taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
+
     document.getElementById('btn-total').classList.add('ativo-total');
   });
