@@ -1,5 +1,4 @@
 equipamento,local
-GE-101-12,Industria de Papeis Sudeste LTDA
 GE-48-15,Auto Posto Garanhao LTDA
 GE-103-150,Eletromecanica do Maranhao LTDA
 GE-72-140,Associacao dos Promotores de Inovacao no Empreendimento Moinho
@@ -27,6 +26,7 @@ GE-74-375,Modulo Rio Industria de Embalagens LTDA
 GE-42-450,Empresa Municipal de Pavimentacao e Urbanidades - EMPAV
 GE-95-460,Municipio de Tres Rios
 GE-02-50,Industria Comercio e Distribuidora JDF de Pecas LTDA
+GE-102-55,Emporio Salvaterra Comercio LTDA
 GE-20-54,Differencial Engenharia LTDA
 GE-22-54,Industria e Comercio de Pao de Queijo Gomes LTDA
 GE-23-54,LRM Comercial LTDA
@@ -55,10 +55,10 @@ GE-32-115,Hugo Lima de Siqueira
 GE-33-115,Condominio Empresarial Oscar Vidal Corporate
 GE-34-115,V.M. Comercio de Automoveis LTDA
 GE-47-115,Industria Comercio Distribuidora JDF de Pecas Eireli - EPP
-GE-03-40,Manutencao pesada - Alternador GMG enviado pro RJ | Prazo: 30/04
-GE-53-140,Manutencao leve - Montagem dos bicos injetores | Prazo: 24/04
-GE-30-105,Manutencao pesada - Mandar bicos pro Duin avaliar | Prazo: 28/04
-GE-68-50,Manutencao pesada - Fazer automacao QTA
+GE-03-40,Manutencao pesada - Aguardando prazo do Vanilson
+GE-53-140,Manutencao leve - Lavar e teste de carga | Prazo: 26/04
+GE-30-105,Manutencao pesada - Mandar bicos pro Duin avaliar | Prazo: 24/04
+GE-68-50,Manutencao pesada - Fazer automacao QTA | Prazo: 24/04
 GE-85-140,Manutencao leve - Lavar tanque | Prazo: 24/04
 GE-89-55,Manutencao pesada - Lavar tanque e verificar alternador GMG | Prazo: 30/04
 GE-100-125,Manutencao leve - Tampa do teto | Prazo: 30/04
