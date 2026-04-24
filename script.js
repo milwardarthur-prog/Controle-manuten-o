@@ -194,7 +194,9 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
-    const taxa = total > 0 ? (cLoc / total * 100) : 0;
+    // A NOVA FÓRMULA SOLICITADA:
+    const taxa = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
+    
     const taxaEl = document.getElementById('taxa-ocupacao');
     taxaEl.textContent = taxa.toFixed(1) + '%';
     taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
