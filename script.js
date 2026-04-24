@@ -41,7 +41,6 @@ function dentroFaixaKva(kva, faixa) {
   return true;
 }
 
-// Interpreta prazo no formato dd/mm ou dd/mm/aaaa e verifica se venceu
 function interpretarPrazo(prazoStr) {
   if (!prazoStr) return null;
   prazoStr = prazoStr.trim();
@@ -52,16 +51,9 @@ function interpretarPrazo(prazoStr) {
   const dataPrazo = new Date(ano, mes, dia);
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
-  return {
-    texto: prazoStr,
-    vencido: dataPrazo < hoje
-  };
+  return { texto: prazoStr, vencido: dataPrazo < hoje };
 }
 
-// Interpreta o campo "local" do CSV
-// Formato esperado para manutenção:
-//   "Manutencao leve - Descrição aqui | Prazo: 30/04"
-//   "Manutencao pesada - Descrição aqui | Prazo: 30/04"
 function interpretarLocal(localBruto) {
   if (!localBruto) return { status: 'locado', cliente: '', obs: '', prazo: null };
 
@@ -75,20 +67,16 @@ function interpretarLocal(localBruto) {
     return { status, cliente: localBruto, obs: '', prazo: null };
   }
 
-  // Extrai descrição e prazo
   let obs = '';
   let prazo = null;
 
-  // Separa pelo " | Prazo: "
   const partePrazo = localBruto.split(/\|/);
   let descricaoParte = partePrazo[0] || '';
   let prazoParte = partePrazo[1] || '';
 
-  // Remove prefixo "Manutencao leve - " ou "Manutencao pesada - "
   descricaoParte = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
   obs = descricaoParte;
 
-  // Extrai data do prazo
   const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
   if (matchPrazo) {
     prazo = interpretarPrazo(matchPrazo[1]);
@@ -173,7 +161,6 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
 
-      // Monta HTML do prazo no canto superior direito
       let prazoHtml = '';
       if (info.prazo) {
         const cls = info.prazo.vencido ? 'prazo-vencido' : 'prazo-ok';
