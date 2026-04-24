@@ -1,6 +1,5 @@
 const TODOS_EQUIPAMENTOS = [
-  "GE-01-02","GE-07-06","GE-08-06",
-  "GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-09-170","GE-10-25",
+  "GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-07-06","GE-08-06","GE-09-170","GE-10-25",
   "GE-11-75","GE-12-75","GE-13-500","GE-14-140","GE-15-170","GE-16-40","GE-17-81",
   "GE-18-100","GE-19-81","GE-20-54","GE-21-54","GE-22-54","GE-23-54","GE-24-54",
   "GE-25-60","GE-26-75","GE-27-180","GE-28-81","GE-29-85","GE-30-105","GE-31-105",
@@ -19,171 +18,124 @@ const TODOS_EQUIPAMENTOS = [
   "GE-114-360","MTS-01-300","MTS-02-300","TL-01-4000"
 ];
 
-const FAIXAS_KVA = [
-  { id: '10-39',   min: 10,  max: 39  },
-  { id: '40-65',   min: 40,  max: 65  },
-  { id: '70-90',   min: 70,  max: 90  },
-  { id: '100-130', min: 100, max: 130 },
-  { id: '140-160', min: 140, max: 160 },
-  { id: '170-190', min: 170, max: 190 },
-  { id: '200-290', min: 200, max: 290 },
-  { id: '300-600', min: 300, max: 600 },
-];
-
 const CSV_URL = 'dados.csv';
-let contDisponivel = 0, contManutencao = 0, contLocado = 0;
-let filtroStatusAtivo = 'todos';
-let filtroKvaAtivo = 'todos';
 
-function getKva(eq) {
-  const partes = eq.split('-');
-  return parseInt(partes[partes.length - 1]);
-}
+// CONTADORES
+let contDisponivel = 0;
+let contManutencao = 0;
+let contLocado = 0;
 
-function getFaixaId(eq) {
-  if (eq.startsWith('MTS') || eq.startsWith('TL')) return 'outros';
-  const kva = getKva(eq);
-  const faixa = FAIXAS_KVA.find(f => kva >= f.min && kva <= f.max);
-  return faixa ? faixa.id : 'outros';
-}
-
+// CSV
 function parseCSV(text) {
-  const clean = text.replace(/^\uFEFF/, '').trim();
-  const linhas = clean.split(/\r?\n/).filter(l => l.trim() !== '');
-  if (linhas.length === 0) return [];
-  return linhas.slice(1).map(linha => {
-    const idx = linha.indexOf(',');
-    if (idx === -1) return { equipamento: linha.trim(), local: '' };
-    return {
-      equipamento: linha.substring(0, idx).trim(),
-      local: linha.substring(idx + 1).trim()
-    };
-  });
-}
+  const linhas = text.trim().split('\n');
+  const cabecalho = linhas[0].split(',').map(h => h.trim().toLowerCase());
 
-function classificarPrazo(prazoStr) {
-  if (!prazoStr) return 'ok';
-  const partes = prazoStr.trim().split('/');
-  if (partes.length < 2) return 'ok';
-  const hoje = new Date();
-  const dia  = parseInt(partes[0]);
-  const mes  = parseInt(partes[1]) - 1; 
-  const ano  = partes[2] ? parseInt(partes[2]) : hoje.getFullYear();
-  const dataPrazo = new Date(ano, mes, dia);
-  const dataHoje  = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-  if (dataPrazo < dataHoje) return 'vencido';
-  if (dataPrazo.getTime() === dataHoje.getTime()) return 'hoje';
-  return 'ok';
-}
+  const dados = [];
 
-function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: '' };
-  const original = localBruto.trim();
-  let prazo = '';
-  let semPrazo = original;
+  for (let i = 1; i < linhas.length; i++) {
+    const colunas = linhas[i].split(',').map(c => c.trim());
+    const obj = {};
 
-  const prazoMatch = original.match(/\|\s*[Pp]razo\s*:\s*([\d]{1,2}\/[\d]{1,2}(?:\/[\d]{2,4})?)/);
-  if (prazoMatch) {
-    prazo = prazoMatch[1];
-    semPrazo = original.substring(0, original.indexOf('|')).trim();
-  }
-
-  const textoSemPrazo = semPrazo.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  if (textoSemPrazo.includes('pesada')) {
-    const obs = semPrazo.replace(/[Mm]anutencao\s*[Pp]esada/ig, '').replace(/[Mm]anutenção\s*[Pp]esada/ig, '').replace(/^[\s\-–—]+/, '').trim();
-    return { status: 'manutencao_pesada', cliente: '', obs, prazo };
-  }
-  if (textoSemPrazo.includes('manutencao') || textoSemPrazo.includes('leve')) {
-    const obs = semPrazo.replace(/[Mm]anutencao\s*[Ll]eve/ig, '').replace(/[Mm]anutenção\s*[Ll]eve/ig, '').replace(/[Mm]anutencao/ig, '').replace(/[Mm]anutenção/ig, '').replace(/[Ll]eve/ig, '').replace(/^[\s\-–—]+/, '').trim();
-    return { status: 'manutencao_leve', cliente: '', obs, prazo };
-  }
-  return { status: 'locado', cliente: original, obs: '', prazo: '' };
-}
-
-function mapStatus(s) {
-  if (s === 'locado') return { classe: 'status-locado', texto: 'Locado' };
-  if (s === 'manutencao_leve') return { classe: 'status-manutencao_leve', texto: 'Manutenção Leve' };
-  if (s === 'manutencao_pesada') return { classe: 'status-manutencao_pesada', texto: 'Manutenção Pesada' };
-  return { classe: 'status-disponivel', texto: 'Disponível' };
-}
-
-function aplicarFiltros() {
-  document.querySelectorAll('.card').forEach(card => {
-    const statusOk = filtroStatusAtivo === 'todos' || (filtroStatusAtivo === 'manutencao' ? card.classList.contains('status-manutencao_leve') || card.classList.contains('status-manutencao_pesada') : card.classList.contains(`status-${filtroStatusAtivo}`));
-    const kvaOk = filtroKvaAtivo === 'todos' || card.dataset.faixa === filtroKvaAtivo;
-    card.style.display = (statusOk && kvaOk) ? '' : 'none';
-  });
-}
-
-function filtrarStatus(tipo, elemento) {
-  filtroStatusAtivo = tipo;
-  document.querySelectorAll('.resumo-card').forEach(r => r.classList.remove('ativo'));
-  elemento.classList.add('ativo');
-  aplicarFiltros();
-}
-
-function filtrarKva(faixa, elemento) {
-  filtroKvaAtivo = faixa;
-  document.querySelectorAll('.btn-kva').forEach(b => b.classList.remove('ativo'));
-  elemento.classList.add('ativo');
-  aplicarFiltros();
-}
-
-// Busca a data da última modificação do arquivo no servidor
-fetch(CSV_URL + '?v=' + Date.now(), { cache: 'no-store' })
-  .then(res => {
-    // Tenta pegar a data de modificação real do cabeçalho
-    const lastMod = res.headers.get('Last-Modified');
-    const dataDisplay = lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
-    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + dataDisplay;
-    return res.text();
-  })
-  .then(text => {
-    const dados = parseCSV(text);
-    const mapa = {};
-    dados.forEach(d => {
-      const eq = (d.equipamento || '').trim();
-      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) mapa[eq] = interpretarLocal(d.local);
+    cabecalho.forEach((col, idx) => {
+      obj[col] = colunas[idx] || '';
     });
 
-    const painel = document.getElementById('painel');
+    dados.push(obj);
+  }
+
+  return dados;
+}
+
+// INTERPRETAÇÃO
+function interpretarLocal(localBruto) {
+  if (!localBruto) {
+    return { status: 'locado', cliente: '' };
+  }
+
+  const texto = localBruto.toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  if (texto.includes('pesada')) {
+    return { status: 'manutencao_pesada', cliente: '' };
+  }
+
+  if (texto.includes('manutencao')) {
+    return { status: 'manutencao_leve', cliente: '' };
+  }
+
+  return { status: 'locado', cliente: localBruto };
+}
+
+// MAPA STATUS
+function mapStatus(status) {
+  switch (status) {
+    case 'locado':
+      return { classe: 'status-locado', texto: 'Locado' };
+    case 'manutencao_leve':
+      return { classe: 'status-manutencao_leve', texto: 'Manutenção leve' };
+    case 'manutencao_pesada':
+      return { classe: 'status-manutencao_pesada', texto: 'Manutenção pesada' };
+    default:
+      return { classe: 'status-disponivel', texto: 'Disponível' };
+  }
+}
+
+// CARD
+function criarCard(equipamento, status, cliente) {
+  const painel = document.getElementById('painel');
+  const { classe, texto } = mapStatus(status);
+
+  // CONTADORES
+  if (status === 'disponivel') contDisponivel++;
+  else if (status === 'locado') contLocado++;
+  else contManutencao++;
+
+  const card = document.createElement('div');
+  card.className = `card ${classe}`;
+
+  card.innerHTML = `
+    <div class="card-titulo">${equipamento}</div>
+    <div class="status-linha ${classe}">
+      <div class="led"></div>
+      <span class="status-texto">${texto}</span>
+    </div>
+    ${cliente ? `<div class="cliente">Cliente: ${cliente}</div>` : ''}
+  `;
+
+  painel.appendChild(card);
+}
+
+// LOAD
+fetch(CSV_URL)
+  .then(res => res.text())
+  .then(text => {
+    const linhas = parseCSV(text);
+    const mapa = {};
+
+    linhas.forEach(linha => {
+      const eq = (linha['equipamento'] || '').trim();
+      const local = (linha['local'] || '').trim();
+
+      if (!eq || !TODOS_EQUIPAMENTOS.includes(eq)) return;
+
+      mapa[eq] = interpretarLocal(local);
+    });
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: '' };
-      const { classe, texto } = mapStatus(info.status);
-      const kva = getKva(eq);
-      const faixaId = getFaixaId(eq);
+      const info = mapa[eq];
 
-      if (info.status === 'disponivel') contDisponivel++;
-      else if (info.status === 'locado') contLocado++;
-      else contManutencao++;
-
-      const statusPrazo = classificarPrazo(info.prazo);
-      const classePrazo = statusPrazo === 'vencido' ? 'vencido' : statusPrazo === 'hoje' ? 'hoje' : '';
-
-      const card = document.createElement('div');
-      card.className = `card ${classe}`;
-      card.dataset.faixa = faixaId;
-
-      card.innerHTML = `
-        <div class="card-header">
-          <div class="card-titulo">${eq}</div>
-          ${info.prazo ? `<div class="prazo ${classePrazo}">⏱️ ${info.prazo}</div>` : ''}
-        </div>
-        <div class="card-kva">${isNaN(kva) ? '' : kva + ' kVA'}</div>
-        <div class="status-linha ${classe}">
-          <div class="led"></div>
-          <span>${texto}</span>
-        </div>
-        ${info.cliente ? `<div class="cliente">Cliente: ${info.cliente}</div>` : ''}
-        ${info.obs ? `<div class="obs">📋 ${info.obs}</div>` : ''}
-      `;
-      painel.appendChild(card);
+      if (!info) {
+        criarCard(eq, 'disponivel', '');
+      } else {
+        criarCard(eq, info.status, info.cliente);
+      }
     });
 
+    // ATUALIZA CONTADORES
     document.getElementById('cont-disponivel').textContent = contDisponivel;
     document.getElementById('cont-manutencao').textContent = contManutencao;
     document.getElementById('cont-locado').textContent = contLocado;
-    document.getElementById('cont-total').textContent = contDisponivel + contManutencao + contLocado;
+    document.getElementById('cont-total').textContent =
+      contDisponivel + contManutencao + contLocado;
   });
