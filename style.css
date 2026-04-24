@@ -20,6 +20,8 @@ h1 {
   width: 140px;
   text-align: center;
   padding: 10px 14px;
+  background: #222;
+  border-radius: 8px;
   z-index: 10;
 }
 
@@ -42,12 +44,11 @@ h1 {
   font-style: italic;
 }
 
-/* BOTÕES DE STATUS */
 .resumo {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 15px;
   flex-wrap: wrap;
 }
 
@@ -64,47 +65,37 @@ h1 {
 }
 
 .btn-filtro:hover { background: #2e2e2e; }
-
 .btn-filtro.ativo-total       { border-color: #ffffff; background: #333; }
 .btn-filtro.ativo-disponivel  { border-color: #00ff66; background: #1a2e1f; }
 .btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
 .btn-filtro.ativo-locado      { border-color: #00aaff; background: #1a2535; }
 
-#cont-disponivel { color: #00ff66; }
-#cont-manutencao { color: #ff3333; }
-#cont-locado     { color: #00aaff; }
-#cont-total      { color: #ffffff; }
-
-/* BOTÕES DE POTÊNCIA */
 .filtros-kva {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 25px;
   flex-wrap: wrap;
 }
 
 .btn-kva {
   background: #1a1a1a;
-  border: 2px solid #444;
+  border: 1px solid #444;
   color: #ccc;
   padding: 6px 14px;
   border-radius: 20px;
   font-size: 0.82rem;
   cursor: pointer;
-  transition: border 0.2s, background 0.2s, color 0.2s;
+  transition: border 0.2s, background 0.2s;
 }
 
-.btn-kva:hover { background: #2a2a2a; border-color: #888; }
-
 .btn-kva.ativo {
-  background: #2a2a00;
-  border-color: #ffdd00;
-  color: #ffdd00;
+  background: #333;
+  border-color: #eee;
+  color: #fff;
   font-weight: bold;
 }
 
-/* PAINEL */
 .painel {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -122,18 +113,8 @@ h1 {
 }
 
 .card-titulo { font-weight: bold; font-size: 1.05rem; }
-
-.status-linha {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.led {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
+.status-linha { display: flex; align-items: center; gap: 8px; }
+.led { width: 12px; height: 12px; border-radius: 50%; }
 
 .status-disponivel .led      { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
 .status-locado .led          { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
@@ -151,7 +132,6 @@ h1 {
 .card-oculto { display: none; }
 
 @media (max-width: 600px) {
-  .card-ocupacao    { position: static; width: auto; margin-bottom: 10px; }
-  .atualizacao-topo { position: static; text-align: right; margin-bottom: 4px; }
-  h1 { font-size: 1.4rem; margin-top: 0; }
+  .card-ocupacao { position: static; width: auto; margin-bottom: 10px; }
+  .atualizacao-topo { position: static; text-align: right; }
 }
