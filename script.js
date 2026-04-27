@@ -27,7 +27,7 @@ function extrairKva(nome) {
   return isNaN(kva) ? 0 : kva;
 }
 
-function dentroFaixaKva(kva, faixa) {
+function dentroFaixaKva(kva, faixa, nome) {
   if (faixa === 'todos')   return true;
   if (faixa === '10-39')   return kva >= 10  && kva <= 39;
   if (faixa === '40-65')   return kva >= 40  && kva <= 65;
@@ -36,8 +36,8 @@ function dentroFaixaKva(kva, faixa) {
   if (faixa === '140-160') return kva >= 140 && kva <= 160;
   if (faixa === '170-190') return kva >= 170 && kva <= 190;
   if (faixa === '200-290') return kva >= 200 && kva <= 290;
-  if (faixa === '300-600') return kva >= 300 && kva <= 600;
-  if (faixa === 'outros')  return !(kva >= 10 && kva <= 600);
+  if (faixa === '300-600') return kva >= 300 && kva <= 600 && (nome || '').startsWith('GE');
+  if (faixa === 'outros')  return !(kva >= 10 && kva <= 600) || !(nome || '').startsWith('GE');
   return true;
 }
 
@@ -96,13 +96,14 @@ function aplicarFiltros() {
   document.querySelectorAll('.card[data-status]').forEach(card => {
     const status = card.getAttribute('data-status');
     const kva    = parseInt(card.getAttribute('data-kva'));
+    const nome   = card.getAttribute('data-eq');
 
     const passaStatus =
       filtroStatus === 'total' ||
       (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) ||
       status === filtroStatus;
 
-    const passaKva = dentroFaixaKva(kva, filtroKva);
+    const passaKva = dentroFaixaKva(kva, filtroKva, nome);
     card.classList.toggle('card-oculto', !(passaStatus && passaKva));
   });
 }
@@ -167,6 +168,7 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.className = `card status-${info.status}`;
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
+      card.setAttribute('data-eq', eq);
 
       let prazoHtml = '';
       if (info.prazo) {
@@ -194,9 +196,7 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
-    // A NOVA FÓRMULA SOLICITADA:
     const taxa = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
-    
     const taxaEl = document.getElementById('taxa-ocupacao');
     taxaEl.textContent = taxa.toFixed(1) + '%';
     taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
