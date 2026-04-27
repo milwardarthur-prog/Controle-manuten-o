@@ -62,21 +62,17 @@ function interpretarPrazo(prazoStr) {
 }
 
 function interpretarLocal(localBruto, contratoBruto) {
-  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
+  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '', desmaiada: false };
 
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
-  // detecta "desmaiada" antes de qualquer outro status
-  if (texto.includes('desmaiada')) {
-    return { status: 'desmaiada', cliente: '', obs: localBruto, prazo: null, contrato: '' };
-  }
+  const ehDesmaiada = texto.includes('desmaiada');
 
   let status = 'locado';
-  if (texto.includes('pesada')) status = 'manutencao_pesada';
+  if (texto.includes('pesada') || ehDesmaiada) status = 'manutencao_pesada';
   else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
 
   if (status === 'locado') {
-    return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim() };
+    return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim(), desmaiada: false };
   }
 
   let obs = '';
@@ -86,15 +82,15 @@ function interpretarLocal(localBruto, contratoBruto) {
   let descricaoParte = partePrazo[0] || '';
   let prazoParte = partePrazo[1] || '';
 
-  descricaoParte = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
-  obs = descricaoParte;
+  // Remove o rótulo de manutenção mas mantém a descrição original (que inclui "Desmaiada")
+  obs = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
 
   const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
   if (matchPrazo) {
     prazo = interpretarPrazo(matchPrazo[1]);
   }
 
-  return { status, cliente: '', obs, prazo, contrato: '' };
+  return { status, cliente: '', obs, prazo, contrato: '', desmaiada: ehDesmaiada };
 }
 
 function aplicarFiltros() {
@@ -159,23 +155,22 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       'disponivel':        'Disponível',
       'locado':            'Locado',
       'manutencao_leve':   'Manutenção Leve',
-      'manutencao_pesada': 'Manutenção Pesada',
-      'desmaiada':         'Desmaiada'
+      'manutencao_pesada': 'Manutenção Pesada'
     };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '', desmaiada: false };
       const kva  = extrairKva(eq);
 
-      if (info.status === 'disponivel')        cDisp++;
-      else if (info.status === 'locado')       cLoc++;
-      else if (info.status === 'desmaiada')    cDesm++;
-      else                                     cMan++;
+      if (info.status === 'disponivel') cDisp++;
+      else if (info.status === 'locado')   cLoc++;
+      else                                 cMan++;
+      
+      // Conta interno apenas para o cálculo das taxas
+      if (info.desmaiada) cDesm++;
 
       const card = document.createElement('div');
-      // desmaiada usa LED vermelho (manutencao_pesada) visualmente
-      const classeVisual = info.status === 'desmaiada' ? 'manutencao_pesada' : info.status;
-      card.className = `card status-${classeVisual}`;
+      card.className = `card status-${info.status}`;
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
       card.setAttribute('data-eq', eq);
@@ -204,20 +199,18 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
 
     document.getElementById('cont-disponivel').textContent = cDisp;
     document.getElementById('cont-manutencao').textContent = cMan;
-    document.getElementById('cont-locado').textContent = cLoc;
-    const total = cDisp + cMan + cLoc + cDesm;
-    document.getElementById('cont-total').textContent = total;
+    document.getElementById('cont-locado').textContent     = cLoc;
+    const total = cDisp + cMan + cLoc;
+    document.getElementById('cont-total').textContent      = total;
 
-    // Base operacional = total - desmaiadas - 3 (conforme solicitado)
+    // Base operacional = total - desmaiadas - 3
     const totalOp = total - cDesm - 3;
 
-    // Taxa de Ocupação = Locados / (Total - Desmaiadas - 3)
     const taxaOcup = totalOp > 0 ? (cLoc / totalOp * 100) : 0;
     const taxaOcupEl = document.getElementById('taxa-ocupacao');
     taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
     taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
-    // Taxa de Disponibilidade = (Locados + Disponíveis) / (Total - Desmaiadas - 3)
     const taxaDisp = totalOp > 0 ? ((cLoc + cDisp) / totalOp * 100) : 0;
     const taxaDispEl = document.getElementById('taxa-disponibilidade');
     taxaDispEl.textContent = taxaDisp.toFixed(1) + '%';
