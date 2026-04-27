@@ -54,39 +54,42 @@ function interpretarPrazo(prazoStr) {
   dataPrazo.setHours(0, 0, 0, 0);
 
   let cor;
-  if (dataPrazo > hoje) {
-    cor = 'prazo-futuro';
-  } else if (dataPrazo.getTime() === hoje.getTime()) {
-    cor = 'prazo-hoje';
-  } else {
-    cor = 'prazo-atrasado';
-  }
+  if (dataPrazo > hoje)                            cor = 'prazo-futuro';
+  else if (dataPrazo.getTime() === hoje.getTime()) cor = 'prazo-hoje';
+  else                                             cor = 'prazo-atrasado';
+
   return { texto: prazoStr, cor };
 }
 
-function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null };
+function interpretarLocal(localBruto, contratoBruto) {
+  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
+
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
   let status = 'locado';
   if (texto.includes('pesada')) status = 'manutencao_pesada';
-  else if (texto.includes('manutencao') || texto.includes('oficina') || texto.includes('leve')) status = 'manutencao_leve';
+  else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
 
   if (status === 'locado') {
-    return { status, cliente: localBruto, obs: '', prazo: null };
+    return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim() };
   }
 
   let obs = '';
   let prazo = null;
+
   const partePrazo = localBruto.split(/\|/);
   let descricaoParte = partePrazo[0] || '';
   let prazoParte = partePrazo[1] || '';
+
   descricaoParte = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
   obs = descricaoParte;
+
   const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
   if (matchPrazo) {
     prazo = interpretarPrazo(matchPrazo[1]);
   }
-  return { status, cliente: '', obs, prazo };
+
+  return { status, cliente: '', obs, prazo, contrato: '' };
 }
 
 function aplicarFiltros() {
@@ -94,7 +97,12 @@ function aplicarFiltros() {
     const status = card.getAttribute('data-status');
     const kva    = parseInt(card.getAttribute('data-kva'));
     const nome   = card.getAttribute('data-eq');
-    const passaStatus = filtroStatus === 'total' || (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) || status === filtroStatus;
+
+    const passaStatus =
+      filtroStatus === 'total' ||
+      (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) ||
+      status === filtroStatus;
+
     const passaKva = dentroFaixaKva(kva, filtroKva, nome);
     card.classList.toggle('card-oculto', !(passaStatus && passaKva));
   });
@@ -117,53 +125,42 @@ function aplicarFiltroKva(faixa, btn) {
   aplicarFiltros();
 }
 
-// BUSCA AUTOMÁTICA DO CSV (Tenta dados.csv ou dados (1).csv)
-async function carregar() {
-    const nomes = ['dados.csv', 'dados (1).csv'];
-    let text = '';
-    for (const nome of nomes) {
-        try {
-            const res = await fetch(nome + '?v=' + Date.now(), { cache: 'no-store' });
-            if (res.ok) {
-                const lastMod = res.headers.get('Last-Modified');
-                document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
-                text = await res.text();
-                break;
-            }
-        } catch (e) {}
-    }
-
-    if (!text) return;
-
+fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
+  .then(res => {
+    const lastMod = res.headers.get('Last-Modified');
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' +
+      (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
+    return res.text();
+  })
+  .then(text => {
     const linhas = text.trim().split('\n');
     const cabecalho = linhas[0].split(',').map(c => c.trim().toLowerCase());
     const mapa = {};
-    let descontoNumero = null;
 
     for (let i = 1; i < linhas.length; i++) {
-        const cols = linhas[i].split(',').map(c => c.trim());
-        const eq       = cols[cabecalho.indexOf('equipamento')] || '';
-        const loc      = cols[cabecalho.indexOf('local')] || '';
-        const descCol  = cabecalho.indexOf('desconto') >= 0 ? (cols[cabecalho.indexOf('desconto')] || '') : '';
-
-        if (eq && (eq.toUpperCase().includes('__CONFIG__') || eq.toUpperCase().startsWith('CONFIG'))) {
-            const cleaned = (descCol || '').replace(/nan/i, '').trim();
-            if (/^\d+$/.test(cleaned)) descontoNumero = parseInt(cleaned, 10);
-            continue;
-        }
-        if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
-            mapa[eq] = interpretarLocal(loc);
-        }
+      const cols = linhas[i].split(',').map(c => c.trim());
+      const eq       = cols[cabecalho.indexOf('equipamento')] || '';
+      const loc      = cols[cabecalho.indexOf('local')]       || '';
+      const contrato = cols[cabecalho.indexOf('contrato')]    || '';
+      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
+        mapa[eq] = interpretarLocal(loc, contrato);
+      }
     }
 
     const painel = document.getElementById('painel');
-    painel.innerHTML = '';
     let cDisp = 0, cMan = 0, cLoc = 0;
-    const textos = { 'disponivel': 'Disponível', 'locado': 'Locado', 'manutencao_leve': 'Manutenção Leve', 'manutencao_pesada': 'Manutenção Pesada' };
+
+    const textos = {
+      'disponivel':        'Disponível',
+      'locado':            'Locado',
+      'manutencao_leve':   'Manutenção Leve',
+      'manutencao_pesada': 'Manutenção Pesada'
+    };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null };
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
       const kva  = extrairKva(eq);
+
       if (info.status === 'disponivel') cDisp++;
       else if (info.status === 'locado') cLoc++;
       else cMan++;
@@ -176,14 +173,15 @@ async function carregar() {
 
       let topoHtml = '';
       if (info.prazo) {
-          // REMOVIDO O ÍCONE ⚠️
-          topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
+        topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
+      } else if (info.contrato) {
+        topoHtml = `<div class="contrato-topo">${info.contrato}</div>`;
       }
 
       card.innerHTML = `
         <div class="card-header">
-            <div class="card-titulo">${eq}</div>
-            ${topoHtml}
+          <div class="card-titulo">${eq}</div>
+          ${topoHtml}
         </div>
         <div class="status-linha">
           <div class="led"></div>
@@ -201,15 +199,15 @@ async function carregar() {
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
-    const desconto = (descontoNumero !== null) ? descontoNumero : 3;
-    const denom = (total - desconto) > 0 ? (total - desconto) : total;
+    // Taxa de Ocupação
+    const taxaOcup = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
+    const taxaOcupEl = document.getElementById('taxa-ocupacao');
+    taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
+    taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
-    const taxa = denom > 0 ? (cLoc / denom * 100) : 0;
-    const taxaEl = document.getElementById('taxa-ocupacao');
-    taxaEl.textContent = taxa.toFixed(1) + '%';
-    taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
+    // Taxa de Disponibilidade (valor fixo por enquanto — Etapa 1)
+    document.getElementById('taxa-disponibilidade').textContent = '--%';
+    document.getElementById('taxa-disponibilidade').className = 'indicador-valor';
 
     document.getElementById('btn-total').classList.add('ativo-total');
-}
-
-carregar();
+  });
