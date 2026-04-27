@@ -13,19 +13,32 @@ h1 {
   font-size: 1.8rem;
 }
 
-.card-ocupacao {
+/* INDICADORES DO TOPO */
+.container-indicadores-topo {
   position: absolute;
   top: 16px;
   left: 20px;
+  display: flex;
+  gap: 10px;
+  z-index: 10;
+}
+
+.card-indicador {
   width: 140px;
   text-align: center;
   padding: 10px 14px;
   background: #222;
   border-radius: 8px;
-  z-index: 10;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
 
-.ocupacao-valor {
+.indicador-titulo {
+  font-size: 0.8rem;
+  font-weight: bold;
+  color: #aaa;
+}
+
+.indicador-valor {
   font-size: 2rem;
   font-weight: bold;
   margin-top: 6px;
@@ -44,6 +57,7 @@ h1 {
   font-style: italic;
 }
 
+/* BOTÕES DE FILTRO */
 .resumo {
   display: flex;
   justify-content: center;
@@ -65,7 +79,7 @@ h1 {
 }
 
 .btn-filtro:hover { background: #2e2e2e; }
-.btn-filtro.ativo-total       { border-color: #ffff; background: #333; }
+.btn-filtro.ativo-total       { border-color: #fff; background: #333; }
 .btn-filtro.ativo-disponivel  { border-color: #00ff66; background: #1a2e1f; }
 .btn-filtro.ativo-manutencao  { border-color: #ff3333; background: #2e1a1a; }
 .btn-filtro.ativo-locado      { border-color: #00aaff; background: #1a2535; }
@@ -73,8 +87,9 @@ h1 {
 #cont-disponivel { color: #00ff66; }
 #cont-manutencao { color: #ff3333; }
 #cont-locado     { color: #00aaff; }
-#cont-total      { color: #ffff; }
+#cont-total      { color: #fff; }
 
+/* FILTROS KVA */
 .filtros-kva {
   display: flex;
   justify-content: center;
@@ -101,6 +116,7 @@ h1 {
   font-weight: bold;
 }
 
+/* PAINEL DE CARDS */
 .painel {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -117,12 +133,18 @@ h1 {
   gap: 6px;
 }
 
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
 .card-titulo { font-weight: bold; font-size: 1.05rem; }
 .status-linha { display: flex; align-items: center; gap: 8px; }
 .led { width: 12px; height: 12px; border-radius: 50%; }
 
-.status-disponivel .led      { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
-.status-locado .led          { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
+.status-disponivel .led        { background: #00ff66; box-shadow: 0 0 8px #00ff66; }
+.status-locado .led            { background: #00aaff; box-shadow: 0 0 8px #00aaff; }
 .status-manutencao_leve .led   { background: #ffdd00; box-shadow: 0 0 8px #ffdd00; }
 .status-manutencao_pesada .led { background: #ff3333; box-shadow: 0 0 8px #ff3333; }
 
@@ -134,7 +156,6 @@ h1 {
   margin-top: 2px;
 }
 
-/* DESCRIÇÃO E PRAZO DE MANUTENÇÃO */
 .obs {
   font-size: 0.82rem;
   color: #ccc;
@@ -149,12 +170,34 @@ h1 {
   padding-top: 2px;
 }
 
-.prazo-ok      { color: #ffdd00; }
-.prazo-vencido { color: #ff3333; }
+.prazo-topo {
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 8px;
+}
+
+.prazo-futuro   { color: #ffffff; }
+.prazo-hoje     { color: #ffdd00; }
+.prazo-atrasado { color: #ff3333; }
+
+.contrato-topo {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #aaa;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 8px;
+}
 
 .card-oculto { display: none; }
 
-@media (max-width: 600px) {
-  .card-ocupacao { position: static; width: auto; margin-bottom: 10px; }
+@media (max-width: 850px) {
+  .container-indicadores-topo {
+    position: static;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
   .atualizacao-topo { position: static; text-align: right; }
 }
