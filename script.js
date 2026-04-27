@@ -1,4 +1,4 @@
-// LISTA FIXA DE TODOS OS EQUIPAMENTOS
+// LISTA FIXA DE TODOS OS EQUIPAMENTOS (Mantida conforme sua regra)
 const TODOS_EQUIPAMENTOS = [
     "GE-02-50", "GE-03-40", "GE-06-115", "GE-07-06", "GE-10-25", "GE-11-75", "GE-13-500", "GE-15-170",
     "GE-16-40", "GE-18-100", "GE-19-81", "GE-20-54", "GE-22-54", "GE-23-54", "GE-24-54", "GE-25-60",
@@ -52,15 +52,19 @@ function atualizarPainel(dadosAtuais) {
     const elementoTaxa = document.querySelector('.valor-taxa');
     container.innerHTML = '';
 
-    // Cálculo da Taxa de Disponibilidade (Locados + Disponíveis) / Total
+    // NOVA LÓGICA DE DISPONIBILIDADE SOLICITADA
+    // Fórmula: (Locados + Disponíveis) / Total
+    // O que é o mesmo que: (Total - Em Manutenção) / Total
     const emManutencaoCount = dadosAtuais.filter(d => d.local.toUpperCase().includes('MANUTENCAO')).length;
     const totalReal = TODOS_EQUIPAMENTOS.length;
     const disponiveisSoma = totalReal - emManutencaoCount;
     
     const taxaDisponibilidade = (disponiveisSoma / totalReal) * 100;
-    elementoTaxa.textContent = `${taxaDisponibilidade.toFixed(1)}%`;
+    
+    if (elementoTaxa) {
+        elementoTaxa.textContent = `${taxaDisponibilidade.toFixed(1)}%`;
+    }
 
-    // Renderiza os cards
     TODOS_EQUIPAMENTOS.forEach(id => {
         const infoCsv = dadosAtuais.find(d => d.equipamento === id);
         const card = document.createElement('div');
@@ -90,6 +94,7 @@ function atualizarPainel(dadosAtuais) {
         const kva = partes[2] || "";
         const modelo = partes[0];
 
+        // Template seguindo rigorosamente seu layout original de cards
         card.innerHTML = `
             ${prazoHtml}
             <div class="led led-${statusClasse}"></div>
@@ -104,6 +109,6 @@ function atualizarPainel(dadosAtuais) {
     });
 }
 
-// Inicialização e atualização automática a cada 30 segundos
+// Inicialização
 carregarDados();
 setInterval(carregarDados, 30000);
