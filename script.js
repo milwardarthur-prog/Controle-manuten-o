@@ -54,10 +54,13 @@ function interpretarPrazo(prazoStr) {
   dataPrazo.setHours(0, 0, 0, 0);
 
   let cor;
-  if (dataPrazo > hoje)                            cor = 'prazo-futuro';
-  else if (dataPrazo.getTime() === hoje.getTime()) cor = 'prazo-hoje';
-  else                                             cor = 'prazo-atrasado';
-
+  if (dataPrazo > hoje) {
+    cor = 'prazo-futuro';
+  } else if (dataPrazo.getTime() === hoje.getTime()) {
+    cor = 'prazo-hoje';
+  } else {
+    cor = 'prazo-atrasado';
+  }
   return { texto: prazoStr, cor };
 }
 
@@ -114,48 +117,47 @@ function aplicarFiltroKva(faixa, btn) {
   aplicarFiltros();
 }
 
-fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
-  .then(res => {
-    const lastMod = res.headers.get('Last-Modified');
-    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
-    return res.text();
-  })
-  .then(text => {
+// BUSCA AUTOMÁTICA DO CSV (Tenta dados.csv ou dados (1).csv)
+async function carregar() {
+    const nomes = ['dados.csv', 'dados (1).csv'];
+    let text = '';
+    for (const nome of nomes) {
+        try {
+            const res = await fetch(nome + '?v=' + Date.now(), { cache: 'no-store' });
+            if (res.ok) {
+                const lastMod = res.headers.get('Last-Modified');
+                document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
+                text = await res.text();
+                break;
+            }
+        } catch (e) {}
+    }
+
+    if (!text) return;
+
     const linhas = text.trim().split('\n');
     const cabecalho = linhas[0].split(',').map(c => c.trim().toLowerCase());
     const mapa = {};
-
-    // Desconto pode ser um número (contagem) ou lista de equipamentos; coletamos ambos
     let descontoNumero = null;
-    const descontoLista = new Set();
 
     for (let i = 1; i < linhas.length; i++) {
-      const cols = linhas[i].split(',').map(c => c.trim());
-      const eq       = cols[cabecalho.indexOf('equipamento')] || '';
-      const loc      = cols[cabecalho.indexOf('local')] || '';
-      const contrato = cabecalho.indexOf('contrato') >= 0 ? (cols[cabecalho.indexOf('contrato')] || '') : '';
-      const descCol  = cabecalho.indexOf('desconto') >= 0 ? (cols[cabecalho.indexOf('desconto')] || '') : '';
+        const cols = linhas[i].split(',').map(c => c.trim());
+        const eq       = cols[cabecalho.indexOf('equipamento')] || '';
+        const loc      = cols[cabecalho.indexOf('local')] || '';
+        const descCol  = cabecalho.indexOf('desconto') >= 0 ? (cols[cabecalho.indexOf('desconto')] || '') : '';
 
-      // Linha CONFIG (padrão do seu exemplo)
-      if (eq && (eq.toUpperCase().includes('__CONFIG__') || eq.toUpperCase().startsWith('CONFIG'))) {
-        const cleaned = (descCol || '').replace(/nan/i, '').trim();
-        if (!cleaned) {
-          // nada
-        } else if (/^\d+$/.test(cleaned)) {
-          descontoNumero = parseInt(cleaned, 10);
-        } else {
-          // interpreta como lista de equipamentos separados por , ; ou espaço
-          cleaned.split(/[;,\/\s]+/).map(s => s.trim()).filter(Boolean).forEach(id => descontoLista.add(id.toUpperCase()));
+        if (eq && (eq.toUpperCase().includes('__CONFIG__') || eq.toUpperCase().startsWith('CONFIG'))) {
+            const cleaned = (descCol || '').replace(/nan/i, '').trim();
+            if (/^\d+$/.test(cleaned)) descontoNumero = parseInt(cleaned, 10);
+            continue;
         }
-        continue;
-      }
-
-      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
-        mapa[eq] = interpretarLocal(loc);
-      }
+        if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
+            mapa[eq] = interpretarLocal(loc);
+        }
     }
 
     const painel = document.getElementById('painel');
+    painel.innerHTML = '';
     let cDisp = 0, cMan = 0, cLoc = 0;
     const textos = { 'disponivel': 'Disponível', 'locado': 'Locado', 'manutencao_leve': 'Manutenção Leve', 'manutencao_pesada': 'Manutenção Pesada' };
 
@@ -174,8 +176,8 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
 
       let topoHtml = '';
       if (info.prazo) {
-          const iconeAviso = (info.prazo.cor === 'prazo-atrasado' || info.prazo.cor === 'prazo-hoje') ? '⚠️ ' : '';
-          topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${iconeAviso}${info.prazo.texto}</div>`;
+          // REMOVIDO O ÍCONE ⚠️
+          topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
       }
 
       card.innerHTML = `
@@ -199,33 +201,15 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
-    // Calcula quantos equipamentos descontar
-    let descontoContagem = 0;
-    if (descontoNumero !== null && !isNaN(descontoNumero)) {
-      descontoContagem = descontoNumero;
-      // limite para não passar do total
-      if (descontoContagem > total) descontoContagem = total;
-    } else if (descontoLista.size > 0) {
-      // Conta apenas os equipamentos que existem na lista mestre
-      let presentes = 0;
-      descontoLista.forEach(id => { if (TODOS_EQUIPAMENTOS.includes(id)) presentes++; });
-      descontoContagem = presentes;
-    } else {
-      // fallback: mantenha o desconto padrão de 3 (comportamento anterior)
-      descontoContagem = 3;
-    }
+    const desconto = (descontoNumero !== null) ? descontoNumero : 3;
+    const denom = (total - desconto) > 0 ? (total - desconto) : total;
 
-    const denom = (total - descontoContagem) > 0 ? (total - descontoContagem) : total;
-
-    // Taxa de Ocupação usando o denominador ajustado
     const taxa = denom > 0 ? (cLoc / denom * 100) : 0;
     const taxaEl = document.getElementById('taxa-ocupacao');
     taxaEl.textContent = taxa.toFixed(1) + '%';
     taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
     document.getElementById('btn-total').classList.add('ativo-total');
-  })
-  .catch(err => {
-    console.error('Erro ao carregar dados.csv:', err);
-    document.getElementById('info-atualizacao').textContent = 'Erro ao carregar dados';
-  });
+}
+
+carregar();
