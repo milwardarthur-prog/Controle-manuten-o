@@ -66,6 +66,11 @@ function interpretarLocal(localBruto, contratoBruto) {
 
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
+  // detecta "desmaiada" antes de qualquer outro status
+  if (texto.includes('desmaiada')) {
+    return { status: 'desmaiada', cliente: '', obs: localBruto, prazo: null, contrato: '' };
+  }
+
   let status = 'locado';
   if (texto.includes('pesada')) status = 'manutencao_pesada';
   else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
@@ -148,25 +153,29 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     }
 
     const painel = document.getElementById('painel');
-    let cDisp = 0, cMan = 0, cLoc = 0;
+    let cDisp = 0, cMan = 0, cLoc = 0, cDesm = 0;
 
     const textos = {
       'disponivel':        'Disponível',
       'locado':            'Locado',
       'manutencao_leve':   'Manutenção Leve',
-      'manutencao_pesada': 'Manutenção Pesada'
+      'manutencao_pesada': 'Manutenção Pesada',
+      'desmaiada':         'Desmaiada'
     };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
       const kva  = extrairKva(eq);
 
-      if (info.status === 'disponivel') cDisp++;
-      else if (info.status === 'locado') cLoc++;
-      else cMan++;
+      if (info.status === 'disponivel')        cDisp++;
+      else if (info.status === 'locado')       cLoc++;
+      else if (info.status === 'desmaiada')    cDesm++;
+      else                                     cMan++;
 
       const card = document.createElement('div');
-      card.className = `card status-${info.status}`;
+      // desmaiada usa LED vermelho (manutencao_pesada) visualmente
+      const classeVisual = info.status === 'desmaiada' ? 'manutencao_pesada' : info.status;
+      card.className = `card status-${classeVisual}`;
       card.setAttribute('data-status', info.status);
       card.setAttribute('data-kva', kva);
       card.setAttribute('data-eq', eq);
@@ -196,17 +205,20 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     document.getElementById('cont-disponivel').textContent = cDisp;
     document.getElementById('cont-manutencao').textContent = cMan;
     document.getElementById('cont-locado').textContent = cLoc;
-    const total = cDisp + cMan + cLoc;
+    const total = cDisp + cMan + cLoc + cDesm;
     document.getElementById('cont-total').textContent = total;
 
-    // Taxa de Ocupação (sem -3)
-    const taxaOcup = total > 0 ? (cLoc / total * 100) : 0;
+    // Base operacional = total - desmaiadas - 3 (conforme solicitado)
+    const totalOp = total - cDesm - 3;
+
+    // Taxa de Ocupação = Locados / (Total - Desmaiadas - 3)
+    const taxaOcup = totalOp > 0 ? (cLoc / totalOp * 100) : 0;
     const taxaOcupEl = document.getElementById('taxa-ocupacao');
     taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
     taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
-    // Taxa de Disponibilidade = (Locados + Disponíveis) / Total
-    const taxaDisp = total > 0 ? ((cLoc + cDisp) / total * 100) : 0;
+    // Taxa de Disponibilidade = (Locados + Disponíveis) / (Total - Desmaiadas - 3)
+    const taxaDisp = totalOp > 0 ? ((cLoc + cDisp) / totalOp * 100) : 0;
     const taxaDispEl = document.getElementById('taxa-disponibilidade');
     taxaDispEl.textContent = taxaDisp.toFixed(1) + '%';
     taxaDispEl.className = 'indicador-valor';
