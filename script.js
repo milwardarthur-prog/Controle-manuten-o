@@ -54,15 +54,15 @@ function interpretarPrazo(prazoStr) {
   dataPrazo.setHours(0, 0, 0, 0);
 
   let cor;
-  if (dataPrazo > hoje)                              cor = 'prazo-futuro';
-  else if (dataPrazo.getTime() === hoje.getTime())   cor = 'prazo-hoje';
-  else                                               cor = 'prazo-atrasado';
+  if (dataPrazo > hoje)                            cor = 'prazo-futuro';
+  else if (dataPrazo.getTime() === hoje.getTime()) cor = 'prazo-hoje';
+  else                                             cor = 'prazo-atrasado';
 
   return { texto: prazoStr, cor };
 }
 
-function interpretarLocal(localBruto) {
-  if (!localBruto) return { status: 'locado', cliente: '', obs: '', prazo: null };
+function interpretarLocal(localBruto, contratoBruto) {
+  if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
 
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
@@ -71,7 +71,7 @@ function interpretarLocal(localBruto) {
   else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
 
   if (status === 'locado') {
-    return { status, cliente: localBruto, obs: '', prazo: null };
+    return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim() };
   }
 
   let obs = '';
@@ -89,7 +89,7 @@ function interpretarLocal(localBruto) {
     prazo = interpretarPrazo(matchPrazo[1]);
   }
 
-  return { status, cliente: '', obs, prazo };
+  return { status, cliente: '', obs, prazo, contrato: '' };
 }
 
 function aplicarFiltros() {
@@ -139,10 +139,11 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
 
     for (let i = 1; i < linhas.length; i++) {
       const cols = linhas[i].split(',').map(c => c.trim());
-      const eq  = cols[cabecalho.indexOf('equipamento')] || '';
-      const loc = cols[cabecalho.indexOf('local')] || '';
+      const eq       = cols[cabecalho.indexOf('equipamento')] || '';
+      const loc      = cols[cabecalho.indexOf('local')]       || '';
+      const contrato = cols[cabecalho.indexOf('contrato')]    || '';
       if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
-        mapa[eq] = interpretarLocal(loc);
+        mapa[eq] = interpretarLocal(loc, contrato);
       }
     }
 
@@ -157,7 +158,7 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
-      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null };
+      const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
       const kva  = extrairKva(eq);
 
       if (info.status === 'disponivel') cDisp++;
@@ -170,15 +171,17 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.setAttribute('data-kva', kva);
       card.setAttribute('data-eq', eq);
 
-      let prazoHtml = '';
+      let topoHtml = '';
       if (info.prazo) {
-        prazoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
+        topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
+      } else if (info.contrato) {
+        topoHtml = `<div class="contrato-topo">${info.contrato}</div>`;
       }
 
       card.innerHTML = `
         <div class="card-header">
           <div class="card-titulo">${eq}</div>
-          ${prazoHtml}
+          ${topoHtml}
         </div>
         <div class="status-linha">
           <div class="led"></div>

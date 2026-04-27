@@ -117,28 +117,13 @@ h1 {
   gap: 6px;
 }
 
-/* HEADER DO CARD: título à esquerda, data à direita */
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 6px;
 }
 
 .card-titulo { font-weight: bold; font-size: 1.05rem; }
-
-.prazo-topo {
-  font-size: 0.75rem;
-  font-weight: bold;
-  white-space: nowrap;
-  text-align: right;
-}
-
-/* Semáforo de datas */
-.prazo-futuro   { color: #ffffff; }
-.prazo-hoje     { color: #ffdd00; }
-.prazo-atrasado { color: #ff3333; }
-
 .status-linha { display: flex; align-items: center; gap: 8px; }
 .led { width: 12px; height: 12px; border-radius: 50%; }
 
@@ -161,6 +146,33 @@ h1 {
   border-top: 1px solid #333;
   padding-top: 4px;
   margin-top: 2px;
+}
+
+.prazo {
+  font-size: 0.82rem;
+  font-weight: bold;
+  padding-top: 2px;
+}
+
+.prazo-topo {
+  font-size: 0.75rem;
+  font-weight: bold;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 8px;
+}
+
+.prazo-futuro   { color: #ffffff; }
+.prazo-hoje     { color: #ffdd00; }
+.prazo-atrasado { color: #ff3333; }
+
+.contrato-topo {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #aaa;
+  white-space: nowrap;
+  text-align: right;
+  padding-left: 8px;
 }
 
 .card-oculto { display: none; }
