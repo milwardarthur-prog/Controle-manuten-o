@@ -63,32 +63,23 @@ function interpretarPrazo(prazoStr) {
 
 function interpretarLocal(localBruto, contratoBruto) {
   if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
-
   const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-
   let status = 'locado';
   if (texto.includes('pesada')) status = 'manutencao_pesada';
-  else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
+  else if (texto.includes('manutencao') || texto.includes('oficina') || texto.includes('leve')) status = 'manutencao_leve';
 
   if (status === 'locado') {
     return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim() };
   }
-
   let obs = '';
   let prazo = null;
-
   const partePrazo = localBruto.split(/\|/);
   let descricaoParte = partePrazo[0] || '';
   let prazoParte = partePrazo[1] || '';
-
   descricaoParte = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
   obs = descricaoParte;
-
   const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
-  if (matchPrazo) {
-    prazo = interpretarPrazo(matchPrazo[1]);
-  }
-
+  if (matchPrazo) prazo = interpretarPrazo(matchPrazo[1]);
   return { status, cliente: '', obs, prazo, contrato: '' };
 }
 
@@ -97,12 +88,7 @@ function aplicarFiltros() {
     const status = card.getAttribute('data-status');
     const kva    = parseInt(card.getAttribute('data-kva'));
     const nome   = card.getAttribute('data-eq');
-
-    const passaStatus =
-      filtroStatus === 'total' ||
-      (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) ||
-      status === filtroStatus;
-
+    const passaStatus = filtroStatus === 'total' || (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) || status === filtroStatus;
     const passaKva = dentroFaixaKva(kva, filtroKva, nome);
     card.classList.toggle('card-oculto', !(passaStatus && passaKva));
   });
@@ -111,9 +97,7 @@ function aplicarFiltros() {
 function aplicarFiltroStatus(filtro) {
   if (filtroStatus === filtro && filtro !== 'total') filtro = 'total';
   filtroStatus = filtro;
-  document.querySelectorAll('.btn-filtro').forEach(btn => {
-    btn.classList.remove('ativo-total','ativo-disponivel','ativo-manutencao','ativo-locado');
-  });
+  document.querySelectorAll('.btn-filtro').forEach(btn => btn.classList.remove('ativo-total','ativo-disponivel','ativo-manutencao','ativo-locado'));
   document.getElementById('btn-' + filtro).classList.add('ativo-' + filtro);
   aplicarFiltros();
 }
@@ -128,39 +112,39 @@ function aplicarFiltroKva(faixa, btn) {
 fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
   .then(res => {
     const lastMod = res.headers.get('Last-Modified');
-    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' +
-      (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
     return res.text();
   })
   .then(text => {
     const linhas = text.trim().split('\n');
     const cabecalho = linhas[0].split(',').map(c => c.trim().toLowerCase());
     const mapa = {};
+    let descontoCsv = null;
 
     for (let i = 1; i < linhas.length; i++) {
-      const cols = linhas[i].split(',').map(c => c.trim());
-      const eq       = cols[cabecalho.indexOf('equipamento')] || '';
-      const loc      = cols[cabecalho.indexOf('local')]       || '';
-      const contrato = cols[cabecalho.indexOf('contrato')]    || '';
-      if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
-        mapa[eq] = interpretarLocal(loc, contrato);
-      }
+        const cols = linhas[i].split(',').map(c => c.trim());
+        const eq       = cols[cabecalho.indexOf('equipamento')] || '';
+        const loc      = cols[cabecalho.indexOf('local')]       || '';
+        const contrato = cabecalho.indexOf('contrato') >= 0 ? (cols[cabecalho.indexOf('contrato')] || '') : '';
+        const descCol  = cabecalho.indexOf('desconto') >= 0 ? (cols[cabecalho.indexOf('desconto')] || '') : '';
+
+        if (eq.includes('__CONFIG__') || eq.toUpperCase() === 'CONFIG') {
+            const n = parseInt(descCol, 10);
+            if (!isNaN(n) && n >= 0) descontoCsv = n;
+            continue;
+        }
+        if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
+            mapa[eq] = interpretarLocal(loc, contrato);
+        }
     }
 
     const painel = document.getElementById('painel');
     let cDisp = 0, cMan = 0, cLoc = 0;
-
-    const textos = {
-      'disponivel':        'Disponível',
-      'locado':            'Locado',
-      'manutencao_leve':   'Manutenção Leve',
-      'manutencao_pesada': 'Manutenção Pesada'
-    };
+    const textos = { 'disponivel': 'Disponível', 'locado': 'Locado', 'manutencao_leve': 'Manutenção Leve', 'manutencao_pesada': 'Manutenção Pesada' };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '' };
       const kva  = extrairKva(eq);
-
       if (info.status === 'disponivel') cDisp++;
       else if (info.status === 'locado') cLoc++;
       else cMan++;
@@ -173,9 +157,8 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
 
       let topoHtml = '';
       if (info.prazo) {
-        topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
-      } else if (info.contrato) {
-        topoHtml = `<div class="contrato-topo">${info.contrato}</div>`;
+          const iconeVencido = (info.prazo.cor === 'prazo-atrasado' || info.prazo.cor === 'prazo-hoje') ? '⚠️ ' : '';
+          topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${iconeVencido}${info.prazo.texto}</div>`;
       }
 
       card.innerHTML = `
@@ -199,15 +182,18 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
+    const desconto = (typeof descontoCsv === 'number') ? descontoCsv : 3;
+    const denom = (total - desconto) > 0 ? (total - desconto) : total;
+
     // Taxa de Ocupação
-    const taxaOcup = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
+    const taxaOcup = denom > 0 ? (cLoc / denom * 100) : 0;
     const taxaOcupEl = document.getElementById('taxa-ocupacao');
     taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
     taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
     // Taxa de Disponibilidade
     const operacional = cLoc + cDisp;
-    const taxaDisp = (total - 3) > 0 ? (operacional / (total - 3) * 100) : 0;
+    const taxaDisp = denom > 0 ? (operacional / denom * 100) : 0;
     const taxaDispEl = document.getElementById('taxa-disponibilidade');
     taxaDispEl.textContent = taxaDisp.toFixed(1) + '%';
     taxaDispEl.className = 'indicador-valor ' + (taxaDisp <= 60 ? 'ocupacao-vermelho' : taxaDisp <= 85 ? 'ocupacao-amarelo' : 'ocupacao-verde');
