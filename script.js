@@ -199,15 +199,10 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent = total;
 
-    // Taxa de Ocupação
-    const taxaOcup = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
-    const taxaOcupEl = document.getElementById('taxa-ocupacao');
-    taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
-    taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
-
-    // Taxa de Disponibilidade (valor fixo por enquanto — Etapa 1)
-    document.getElementById('taxa-disponibilidade').textContent = '--%';
-    document.getElementById('taxa-disponibilidade').className = 'indicador-valor';
+    const taxa = (total - 3) > 0 ? (cLoc / (total - 3) * 100) : 0;
+    const taxaEl = document.getElementById('taxa-ocupacao');
+    taxaEl.textContent = taxa.toFixed(1) + '%';
+    taxaEl.className = 'ocupacao-valor ' + (taxa <= 40 ? 'ocupacao-vermelho' : taxa <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
     document.getElementById('btn-total').classList.add('ativo-total');
   });
