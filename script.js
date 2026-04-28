@@ -82,7 +82,7 @@ function interpretarLocal(localBruto, contratoBruto) {
   let descricaoParte = partePrazo[0] || '';
   let prazoParte = partePrazo[1] || '';
 
-  // Remove o rótulo de manutenção mas mantém a descrição original (que inclui "Desmaiada")
+  // Remove o rótulo de manutenção mas mantém a descrição original (que pode incluir "Desmaiada")
   obs = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
 
   const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
@@ -166,7 +166,6 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       else if (info.status === 'locado')   cLoc++;
       else                                 cMan++;
       
-      // Conta interno apenas para o cálculo das taxas
       if (info.desmaiada) cDesm++;
 
       const card = document.createElement('div');
@@ -197,21 +196,25 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       painel.appendChild(card);
     });
 
+    // Totais exibidos (incluem Desmaiadas via cMan)
     document.getElementById('cont-disponivel').textContent = cDisp;
     document.getElementById('cont-manutencao').textContent = cMan;
     document.getElementById('cont-locado').textContent     = cLoc;
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent      = total;
 
-    // Base operacional = total - desmaiadas - 3
-    const totalOp = total - cDesm - 3;
+    // Denominadores separados:
+    const denomOcup = total - 3;                // Ocupação: NÃO subtrai Desmaiadas
+    const denomDisp = total - cDesm - 3;        // Disponibilidade: subtrai Desmaiadas
 
-    const taxaOcup = totalOp > 0 ? (cLoc / totalOp * 100) : 0;
+    // Taxa de Ocupação = Locados / (Total - 3)
+    const taxaOcup = denomOcup > 0 ? (cLoc / denomOcup * 100) : 0;
     const taxaOcupEl = document.getElementById('taxa-ocupacao');
     taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
     taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
 
-    const taxaDisp = totalOp > 0 ? ((cLoc + cDisp) / totalOp * 100) : 0;
+    // Taxa de Disponibilidade = (Locados + Disponíveis) / (Total - Desmaiadas - 3)
+    const taxaDisp = denomDisp > 0 ? ((cLoc + cDisp) / denomDisp * 100) : 0;
     const taxaDispEl = document.getElementById('taxa-disponibilidade');
     taxaDispEl.textContent = taxaDisp.toFixed(1) + '%';
     taxaDispEl.className = 'indicador-valor';
