@@ -35,6 +35,7 @@ GE-45-40,BRANET GESTAO DE LOGISTICA EM SAUDE LTDA,225
 GE-46-25,INDUSTRIA E COMERCIO DE PAO DE QUEIJO GOMES LTDA,3461
 GE-47-115,INDUSTRIA COMERCIO DISTRIBUIDORA JDF DE PECAS EIRELI - EPP,366
 GE-48-15,AUTO POSTO GARANHAO LTDA,1711
+GE-49-55,ELETROMECANICA DO MARANHAO LTDA,4127
 GE-50-55,COIMBRA PRODUTOS DE LATICINIOS LIMITADA,3601
 GE-51-550,DIFFERENCIAL ENGENHARIA LTDA,3977
 GE-52-212,BARRO BRANCO AGROPECUARIA,3167
@@ -64,13 +65,14 @@ GE-99-36,CONDOMINIO ESTRELA DO LAGO,2093
 GE-39-180,FONTABELA,4101
 GE-62-81,GRAN JARDIM,4119
 GE-07-06,Manutencao pesada - Desmaiada,
-GE-03-40,Manutencao pesada - Aguardando prazo do Vanilson,
-GE-53-140,Manutencao leve - Lavar e teste de carga | Prazo: 26/04,
-GE-30-105,Manutencao pesada - Mandar bicos pro Duin avaliar | Prazo: 24/04,
+GE-03-40,Manutencao pesada - Buscar no RJ 30/04 | Prazo: 30/04,
+GE-53-140,Manutencao leve - Lavar e teste de carga | Prazo: 28/04,
+GE-30-105,Manutencao pesada - Ver turbina | Prazo: 28/04,
 GE-68-50,Manutencao pesada - Comprar arruela de nylon | Prazo: 30/04,
-GE-89-55,Manutencao leve - Lavar externo | Prazo: 28/04,
+GE-89-55,Manutencao leve - Lavar externo e instalar espelho botao de emergencia | Prazo: 28/04,
 GE-100-125,Manutencao leve - Tampa do teto | Prazo: 30/04,
 GE-13-500,Manutencao pesada - Desmaiada,
 MTS-02-300,Manutencao pesada - Desmaiada,
 GE-90-20,Manutencao pesada - Desmaiada,
 GE-81-50,Manutencao leve - Ex Moinho,
+GE-106-500,Manutencao leve - Limpeza interna | Prazo: 30/04,
