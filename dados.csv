@@ -5,7 +5,6 @@ GE-06-115,CHUA DISTRIBUIDORA DE ALIMENTOS E REPRESENTACOES S/A,2013
 GE-10-25,JEOVA JIREH GESTAO DE ESTOQUE EM LOGISTICA BR LTDA,644
 GE-103-150,ELETROMECANICA DO MARANHAO LTDA,3996
 GE-104-65,VERSUS EVENTOS LTDA,3917
-GE-109-25,LIDER VEICULOS S.A.,4120
 GE-110-80,CONDOMINIO BRASIL LOG JF,3654
 GE-113-360,ROSSETTO INDUSTRIA E COMERCIO DE ALIMENTOS LTDA,3482
 GE-114-360,FUNDACAO GETULIO VARGAS,3866
@@ -60,8 +59,8 @@ GE-62-81,GRAN JARDIM,4119
 GE-88-55,LIRIO DO VALE,1111
 GE-07-06,Manutencao pesada - Desmaiada,
 GE-03-40,Manutencao pesada - Comprar retentor e montar alternador GMG | Prazo: 05/05,
-GE-53-140,Manutencao leve - Teste de carga e lavar tanque | Prazo: 29/04,
-GE-30-105,Manutencao pesada - Montagem da turbina e testes | Prazo: 04/05,
+GE-53-140,Manutencao leve - Teste de carga | Prazo: 29/04,
+GE-30-105,Manutencao pesada - Bomba injetora no Duin | Prazo: 07/05,
 GE-68-50,Manutencao pesada - Comprar juntas da parte da frente | Prazo: 30/04,
 GE-89-55,Manutencao leve - Pintar,
 GE-100-125,Manutencao leve - Tampa do teto | Prazo: 04/04,
@@ -69,3 +68,5 @@ GE-13-500,Manutencao pesada - Desmaiada,
 MTS-02-300,Manutencao pesada - Desmaiada,
 GE-90-20,Manutencao pesada - Desmaiada,
 GE-106-500,Manutencao leve - Limpeza interna | Prazo: 30/04,
+GE-101-12,Manutencao pesada - Desmaiada,
+GE-40-180,Manutencao pesada - Lavar radiador e intercooler e troca da correia | Prazo: 05/05,
