@@ -1,3 +1,4 @@
+/* MANTENDO A LISTA DE EQUIPAMENTOS ORIGINAL */
 const TODOS_EQUIPAMENTOS = [
   "GE-01-02","GE-02-50","GE-03-40","GE-04-55","GE-05-55","GE-06-115","GE-07-06","GE-08-06","GE-09-170","GE-10-25",
   "GE-11-75","GE-12-75","GE-13-500","GE-14-140","GE-15-170","GE-16-40","GE-17-81",
@@ -20,9 +21,8 @@ const TODOS_EQUIPAMENTOS = [
 
 let filtroStatus = 'total';
 let filtroKva = 'todos';
-let listaTimersAtivos = []; // Guardará referências para atualizar os relógios
+let listaTimersAtivos = [];
 
-// Auxiliar para formatar milissegundos em tempo legível
 function formatarTempo(ms) {
   if (ms < 0) ms = 0;
   const segundosTotais = Math.floor(ms / 1000);
@@ -30,14 +30,12 @@ function formatarTempo(ms) {
   const horas = Math.floor((segundosTotais % 86400) / 3600);
   const minutos = Math.floor((segundosTotais % 3600) / 60);
   const segundos = segundosTotais % 60;
-
   let str = "";
   if (dias > 0) str += `${dias}d `;
   str += `${String(horas).padStart(2, '0')}h ${String(minutos).padStart(2, '0')}m ${String(segundos).padStart(2, '0')}s`;
   return str;
 }
 
-// Atualiza todos os contadores da tela
 function atualizarContadoresEmTela() {
   const agora = new Date();
   listaTimersAtivos.forEach(timer => {
@@ -52,7 +50,6 @@ function atualizarContadoresEmTela() {
   });
 }
 
-// Roda a atualização a cada 1 segundo
 setInterval(atualizarContadoresEmTela, 1000);
 
 function extrairKva(nome) {
@@ -81,38 +78,31 @@ function interpretarPrazo(prazoStr) {
   const partes = prazoStr.split('/');
   const dia = parseInt(partes[0]);
   const mes = parseInt(partes[1]) - 1;
-  const ano = partes[2] ? parseInt(partes[2]) : new Date().getFullYear();
+  const ano = partes[2] ? (partes[2].length === 2 ? 2000 + parseInt(partes[2]) : parseInt(partes[2])) : new Date().getFullYear();
   const dataPrazo = new Date(ano, mes, dia);
   const hoje = new Date();
   hoje.setHours(0, 0, 0, 0);
   dataPrazo.setHours(0, 0, 0, 0);
-
-  let cor;
-  if (dataPrazo > hoje)                            cor = 'prazo-futuro';
-  else if (dataPrazo.getTime() === hoje.getTime()) cor = 'prazo-hoje';
-  else                                             cor = 'prazo-atrasado';
-
+  let cor = (dataPrazo > hoje) ? 'prazo-futuro' : (dataPrazo.getTime() === hoje.getTime() ? 'prazo-hoje' : 'prazo-atrasado');
   return { texto: prazoStr, cor };
 }
 
 function interpretarLocal(localBruto, contratoBruto, esperaMs, inicioEsperaStr) {
   if (!localBruto) return { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '', desmaiada: false, esperaMs: 0, inicioEspera: null };
 
-  const texto = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  const ehDesmaiada = texto.includes('desmaiada');
+  const textoNormal = localBruto.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const ehDesmaiada = textoNormal.includes('desmaiada');
 
   let status = 'locado';
-  if (texto.includes('pesada') || ehDesmaiada) status = 'manutencao_pesada';
-  else if (texto.includes('manutencao') || texto.includes('oficina')) status = 'manutencao_leve';
+  if (textoNormal.includes('pesada') || ehDesmaiada) status = 'manutencao_pesada';
+  else if (textoNormal.includes('manutencao') || textoNormal.includes('oficina') || textoNormal.includes('leve')) status = 'manutencao_leve';
 
   let inicioEspera = null;
   if (inicioEsperaStr && inicioEsperaStr.trim() !== "") {
-    // Tenta converter a string de data do CSV (Padrão: DD/MM/YYYY HH:MM:SS ou YYYY-MM-DD HH:MM:SS)
-    // Se usar Excel, o formato comum é DD/MM/YYYY HH:MM
     const partesData = inicioEsperaStr.includes('/') ? inicioEsperaStr.split(/[\/\s:]/) : null;
     if (partesData && partesData.length >= 5) {
-      // Ajuste para formato DD/MM/YYYY HH:MM
-      inicioEspera = new Date(partesData[2], partesData[1]-1, partesData[0], partesData[3], partesData[4], partesData[5] || 0);
+      const ano = partesData[2].length === 2 ? 2000 + parseInt(partesData[2]) : partesData[2];
+      inicioEspera = new Date(ano, partesData[1]-1, partesData[0], partesData[3], partesData[4], partesData[5] || 0);
     } else {
       inicioEspera = new Date(inicioEsperaStr);
     }
@@ -122,20 +112,18 @@ function interpretarLocal(localBruto, contratoBruto, esperaMs, inicioEsperaStr) 
     return { status, cliente: localBruto, obs: '', prazo: null, contrato: (contratoBruto || '').trim(), desmaiada: false, esperaMs: 0, inicioEspera: null };
   }
 
-  let obs = '';
-  let prazo = null;
-  const partePrazo = localBruto.split(/\|/);
-  let descricaoParte = partePrazo[0] || '';
-  let prazoParte = partePrazo[1] || '';
-  obs = descricaoParte.replace(/manutencao\s*(leve|pesada)\s*[-–]?\s*/i, '').trim();
+  // LIMPEZA DA OBSERVAÇÃO: Remove "Manutenção Pesada" ou "Manutenção Leve" do campo de texto
+  let obsFinal = localBruto.split(/\|/)[0] || '';
+  obsFinal = obsFinal.replace(/manuten[cç][aã]o\s*(leve|pesada)\s*[-–]?\s*/gi, '').trim();
 
-  const matchPrazo = prazoParte.match(/prazo\s*:\s*([\d\/]+)/i);
+  let prazo = null;
+  const matchPrazo = localBruto.match(/prazo\s*:\s*([\d\/]+)/i);
   if (matchPrazo) {
     prazo = interpretarPrazo(matchPrazo[1]);
   }
 
   return { 
-    status, cliente: '', obs, prazo, contrato: '', 
+    status, cliente: '', obs: obsFinal, prazo, contrato: '', 
     desmaiada: ehDesmaiada, 
     esperaMs: parseInt(esperaMs) || 0,
     inicioEspera: (isNaN(inicioEspera) ? null : inicioEspera)
@@ -147,12 +135,7 @@ function aplicarFiltros() {
     const status = card.getAttribute('data-status');
     const kva    = parseInt(card.getAttribute('data-kva'));
     const nome   = card.getAttribute('data-eq');
-
-    const passaStatus =
-      filtroStatus === 'total' ||
-      (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) ||
-      status === filtroStatus;
-
+    const passaStatus = filtroStatus === 'total' || (filtroStatus === 'manutencao' && (status === 'manutencao_leve' || status === 'manutencao_pesada')) || status === filtroStatus;
     const passaKva = dentroFaixaKva(kva, filtroKva, nome);
     card.classList.toggle('card-oculto', !(passaStatus && passaKva));
   });
@@ -178,20 +161,17 @@ function aplicarFiltroKva(faixa, btn) {
 fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
   .then(res => {
     const lastMod = res.headers.get('Last-Modified');
-    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' +
-      (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
+    document.getElementById('info-atualizacao').textContent = 'Dados atualizados em: ' + (lastMod ? new Date(lastMod).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR'));
     return res.text();
   })
   .then(text => {
     const linhas = text.trim().split('\n');
     const cabecalho = linhas[0].split(',').map(c => c.trim().toLowerCase());
-    
-    // Identificar índices das novas colunas
     const idxEsperaAcum = cabecalho.indexOf('espera_acumulada_min');
     const idxEsperaInicio = cabecalho.indexOf('espera_inicio');
 
     const mapa = {};
-    listaTimersAtivos = []; // Limpa a lista antes de re-popular
+    listaTimersAtivos = [];
 
     for (let i = 1; i < linhas.length; i++) {
         const cols = linhas[i].split(',').map(c => c.trim());
@@ -200,43 +180,23 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
         const contrato = cols[cabecalho.indexOf('contrato')]    || '';
         const espAcum  = (idxEsperaAcum !== -1) ? cols[idxEsperaAcum] : "0";
         const espIni   = (idxEsperaInicio !== -1) ? cols[idxEsperaInicio] : "";
-
         if (eq && TODOS_EQUIPAMENTOS.includes(eq)) {
-          // Converter minutos acumulados para milissegundos
           const acumMs = (parseInt(espAcum) || 0) * 60000;
           mapa[eq] = interpretarLocal(loc, contrato, acumMs, espIni);
         }
     }
 
     const painel = document.getElementById('painel');
-    painel.innerHTML = ""; // Limpa painel para re-renderizar
+    painel.innerHTML = "";
     let cDisp = 0, cMan = 0, cLoc = 0, cDesm = 0;
-
-    const textos = {
-      'disponivel':        'Disponível',
-      'locado':            'Locado',
-      'manutencao_leve':   'Manutenção Leve',
-      'manutencao_pesada': 'Manutenção Pesada'
-    };
+    const textos = { 'disponivel': 'Disponível', 'locado': 'Locado', 'manutencao_leve': 'Manutenção Leve', 'manutencao_pesada': 'Manutenção Pesada' };
 
     TODOS_EQUIPAMENTOS.forEach(eq => {
       const info = mapa[eq] || { status: 'disponivel', cliente: '', obs: '', prazo: null, contrato: '', desmaiada: false, esperaMs: 0, inicioEspera: null };
       const kva  = extrairKva(eq);
-
-      if (info.status === 'disponivel')    cDisp++;
-      else if (info.status === 'locado')   cLoc++;
-      else                                 cMan++;
-      
+      if (info.status === 'disponivel') cDisp++; else if (info.status === 'locado') cLoc++; else cMan++;
       if (info.desmaiada) cDesm++;
-
-      // Se tiver tempo pra contar, adiciona na lista de atualização em tempo real
-      if (info.esperaMs > 0 || info.inicioEspera) {
-        listaTimersAtivos.push({
-          eq: eq,
-          acumuladoMs: info.esperaMs,
-          inicio: info.inicioEspera
-        });
-      }
+      if (info.esperaMs > 0 || info.inicioEspera) { listaTimersAtivos.push({ eq: eq, acumuladoMs: info.esperaMs, inicio: info.inicioEspera }); }
 
       const card = document.createElement('div');
       card.className = `card status-${info.status}`;
@@ -244,34 +204,17 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
       card.setAttribute('data-kva', kva);
       card.setAttribute('data-eq', eq);
 
-      let topoHtml = '';
-      if (info.prazo) {
-        topoHtml = `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>`;
-      } else if (info.contrato) {
-        topoHtml = `<div class="contrato-topo">${info.contrato}</div>`;
-      }
+      let topoHtml = info.prazo ? `<div class="prazo-topo ${info.prazo.cor}">${info.prazo.texto}</div>` : (info.contrato ? `<div class="contrato-topo">${info.contrato}</div>` : '');
 
-      // HTML do timer (aparecerá se for manutenção)
       let timerHtml = "";
       if (info.status.startsWith('manutencao') && (info.esperaMs > 0 || info.inicioEspera)) {
         const icone = info.inicioEspera ? "⏳" : "⏸";
-        timerHtml = `
-          <div class="espera-container" style="margin-top: 10px; font-size: 0.85em; color: #ffcc00; border-top: 1px solid #444; padding-top: 5px;">
-            <span>${icone} Tempo em espera:</span>
-            <div id="timer-${eq}" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">${formatarTempo(info.esperaMs)}</div>
-          </div>
-        `;
+        timerHtml = `<div class="espera-container" style="margin-top: 10px; font-size: 0.85em; color: #ffcc00; border-top: 1px solid #444; padding-top: 5px;"><span>${icone} Tempo em espera:</span><div id="timer-${eq}" style="font-weight: bold; font-family: monospace; font-size: 1.1em;">${formatarTempo(info.esperaMs)}</div></div>`;
       }
 
       card.innerHTML = `
-        <div class="card-header">
-          <div class="card-titulo">${eq}</div>
-          ${topoHtml}
-        </div>
-        <div class="status-linha">
-          <div class="led"></div>
-          <span>${textos[info.status]}</span>
-        </div>
+        <div class="card-header"><div class="card-titulo">${eq}</div>${topoHtml}</div>
+        <div class="status-linha"><div class="led"></div><span>${textos[info.status]}</span></div>
         ${info.cliente ? `<div class="cliente">${info.cliente}</div>` : ''}
         ${info.obs     ? `<div class="obs">${info.obs}</div>` : ''}
         ${timerHtml}
@@ -284,20 +227,14 @@ fetch('dados.csv?v=' + Date.now(), { cache: 'no-store' })
     document.getElementById('cont-locado').textContent     = cLoc;
     const total = cDisp + cMan + cLoc;
     document.getElementById('cont-total').textContent      = total;
-
     const denomOcup = total - 3;
     const denomDisp = total - cDesm - 3;
-
     const taxaOcup = denomOcup > 0 ? (cLoc / denomOcup * 100) : 0;
     const taxaOcupEl = document.getElementById('taxa-ocupacao');
     taxaOcupEl.textContent = taxaOcup.toFixed(1) + '%';
     taxaOcupEl.className = 'indicador-valor ' + (taxaOcup <= 40 ? 'ocupacao-vermelho' : taxaOcup <= 70 ? 'ocupacao-amarelo' : 'ocupacao-verde');
-
     const taxaDisp = denomDisp > 0 ? ((cLoc + cDisp) / denomDisp * 100) : 0;
     const taxaDispEl = document.getElementById('taxa-disponibilidade');
     taxaDispEl.textContent = taxaDisp.toFixed(1) + '%';
-    taxaDispEl.className = 'indicador-valor';
-
-    // Inicia a primeira atualização dos relógios
     atualizarContadoresEmTela();
   });
